@@ -1,4 +1,7 @@
+import os
+
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="nf4lm")
 
@@ -14,7 +17,3 @@ def health():
 # app.include_router(recipes.router, prefix="/recipes")
 # app.include_router(shopping.router, prefix="/shopping")
 # app.include_router(events.router)
-
-# TODO: mount static files for production
-# from fastapi.staticfiles import StaticFiles
-# app.mount("/", StaticFiles(directory="client/dist", html=True), name="static")
