@@ -2,6 +2,9 @@ name: CI
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   lint-frontend:
@@ -49,3 +52,22 @@ jobs:
         run: pip install -r requirements-dev.txt
       - name: Run tests
         run: pytest server/tests/
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [lint-frontend, test-frontend, test-backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /srv/nf4lm
+            git pull origin main
+            cd client && npm ci && npm run build && cd ..
+            pip install -r requirements.txt
+            sudo systemctl restart nf4lm
