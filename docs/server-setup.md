@@ -15,16 +15,13 @@ Description=nf4lm FastAPI app
 After=network.target
 
 [Service]
-WorkingDirectory=/srv/nf4lm
-ExecStart=/usr/bin/uvicorn server.main:app --host 0.0.0.0 --port 8000
+WorkingDirectory=/home/gomburza/dev/nofoodforlazyman
+ExecStart=/home/gomburza/dev/nofoodforlazyman/.venv/bin/uvicorn server.main:app --host 0.0.0.0 --port 8000
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 ```
-
-> Adjust `ExecStart` if uvicorn is installed in a virtualenv, e.g.:
-> `ExecStart=/srv/nf4lm/.venv/bin/uvicorn server.main:app --host 0.0.0.0 --port 8000`
 
 ### 2. Enable and start the service
 
