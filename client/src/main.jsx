@@ -20,7 +20,13 @@ function App() {
   }
 
   return (
-    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial", padding: "24px" }}>
+    <div
+      style={{
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial",
+        padding: "24px",
+      }}
+    >
       <div>!No Food for Lazy Man!</div>
       <button
         onClick={checkHealth}
@@ -39,7 +45,13 @@ function App() {
         {loading ? "Checking…" : "Health Check"}
       </button>
       {status && (
-        <div style={{ marginTop: "12px", fontSize: "14px", color: status.ok ? "#10B981" : "#EF4444" }}>
+        <div
+          style={{
+            marginTop: "12px",
+            fontSize: "14px",
+            color: status.ok ? "#10B981" : "#EF4444",
+          }}
+        >
           {JSON.stringify(status.data)}
         </div>
       )}
