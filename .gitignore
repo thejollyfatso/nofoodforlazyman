@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Python virtual environment
+.venv/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Test cache
+.pytest_cache/
+
+# Database files
+*.sqlite
+*.db
+
+# macOS
+.DS_Store
+
+# Coverage
+coverage/
