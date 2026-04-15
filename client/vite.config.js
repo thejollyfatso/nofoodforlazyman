@@ -5,7 +5,15 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/api": {
+      "/auth": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/recipes": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/shopping": {
         target: "http://localhost:8000",
         changeOrigin: true,
       },

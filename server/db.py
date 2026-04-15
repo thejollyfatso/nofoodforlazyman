@@ -1,7 +1,45 @@
-# SQLite connection and schema initialisation will live here.
-# init_db() will be called at application startup to create tables
-# if they do not already exist.
+import os
+import sqlite3
+from contextlib import contextmanager
+
+DB_PATH = os.getenv("DATABASE_URL", "./nf4lm.db")
+
+
+def get_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    return conn
+
+
+@contextmanager
+def get_db():
+    conn = get_conn()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def init_db():
-    pass
+    with get_db() as conn:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS users (
+                id       TEXT PRIMARY KEY,
+                email    TEXT UNIQUE NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS otp_codes (
+                id         TEXT PRIMARY KEY,
+                email      TEXT NOT NULL,
+                code       TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                used       INTEGER NOT NULL DEFAULT 0
+            );
+        """)
