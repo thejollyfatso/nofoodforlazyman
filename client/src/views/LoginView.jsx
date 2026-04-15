@@ -199,7 +199,11 @@ export default function LoginView({ onLogin }) {
             <button type="submit" disabled={loading} style={btnStyle}>
               {loading ? "Verifying…" : "Sign In"}
             </button>
-            <button type="button" style={styles.backButton} onClick={handleBack}>
+            <button
+              type="button"
+              style={styles.backButton}
+              onClick={handleBack}
+            >
               Use a different email
             </button>
           </form>

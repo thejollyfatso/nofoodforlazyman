@@ -1,5 +1,7 @@
 fastapi
 uvicorn
 python-dotenv
+PyJWT
+resend
 pytest
 httpx
