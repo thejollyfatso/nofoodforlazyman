@@ -9,7 +9,8 @@ function App() {
     setLoading(true);
     setStatus(null);
     try {
-      const res = await fetch("/health");
+      const base = import.meta.env.VITE_API_URL ?? "";
+      const res = await fetch(`${base}/health`);
       const data = await res.json();
       setStatus({ ok: res.ok, data });
     } catch {
