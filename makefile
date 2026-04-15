@@ -8,7 +8,7 @@ dev-client:
 	cd client && npm run dev
 
 dev-server:
-	cd server && ../.venv/bin/uvicorn main:app --reload --port 8000
+	.venv/bin/uvicorn server.main:app --reload --port 8000
 
 test:
 	cd client && npm test
