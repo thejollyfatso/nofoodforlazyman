@@ -7,7 +7,7 @@ Parties are a separate feature and are not covered here.
 
 ## Users
 
-- Avatar: letter + color picker, stored per user
+- Avatar: letter + color picker, stored per household membership — not global
 - Alias per household — set on join, editable any time after
 - Alias is per household, not global (user can have different alias in each household)
 - Alias falls back to email address if not set
@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS household_members (
   user_id TEXT NOT NULL REFERENCES users(id),
   role TEXT NOT NULL CHECK (role IN ('owner', 'member')),
   alias TEXT,
+  avatar_letter TEXT,
+  avatar_color TEXT,
   joined_at TEXT NOT NULL,
   PRIMARY KEY (household_id, user_id)
 );
@@ -151,10 +153,6 @@ shopping_list items need two new columns:
 recipes table needs two new columns:
 - `copied_from_user_id` TEXT  -- null if original, set if copied from household
 - `copied_from_alias` TEXT    -- alias of original owner at time of copy, immutable
-
-users table needs two new columns:
-- `avatar_letter` TEXT        -- single character
-- `avatar_color` TEXT         -- hex color string
 
 ---
 
