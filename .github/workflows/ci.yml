@@ -71,7 +71,7 @@ jobs:
             source ~/.nvm/nvm.sh
             cd /home/gomburza/dev/nofoodforlazyman
             git pull origin main
-            set -a && source /home/gomburza/dev/nofoodforlazyman/.env && set +a
+            export VITE_API_URL=$(grep '^VITE_API_URL=' /home/gomburza/dev/nofoodforlazyman/.env | cut -d '=' -f2-)
             cd client && npm ci && npm run build && cd ..
             .venv/bin/pip install -r requirements.txt
             sudo systemctl restart nf4lm
