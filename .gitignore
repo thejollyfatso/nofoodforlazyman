@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Windows/WSL metadata
+*.Zone.Identifier
+
 # Python virtual environment
 .venv/
 
