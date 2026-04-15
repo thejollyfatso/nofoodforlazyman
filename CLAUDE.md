@@ -22,23 +22,23 @@ the priorities.
 | Backend    | FastAPI (Python) + SQLite, self-hosted on DigitalOcean       |
 | Auth       | Better Auth — magic link / OTP email only, no passwords      |
 | Email      | Resend                                                       |
-| Hosting    | DigitalOcean App Platform                                    |
+| Hosting    | DigitalOcean Droplet — systemd service, SSH deploy via CI    |
 | Realtime   | SSE (Server-Sent Events) — shopping lists only               |
 | PWA        | vite-plugin-pwa — installable, manifest, service worker stub |
 
 Frontend and static assets are served by the same FastAPI server in production
-(same origin, no CORS needed). Vite dev proxy handles this locally.
+(same origin). Vite dev proxy handles this locally. CORS middleware is present
+in main.py, scoped to `https://nf4lm.deleonanddeleon.com`.
 SQLite file lives on the DigitalOcean Droplet. No external database service.
 
 ---
 
 ## Environments
 
-| Name        | Purpose                                           |
-|-------------|---------------------------------------------------|
-| `local`     | `npm run dev` (client/) + `uvicorn` (server/)     |
-| `preview`   | Auto-deployed per PR by DigitalOcean App Platform |
-| `production`| Auto-deployed on push to `main`                   |
+| Name        | Purpose                                                         |
+|-------------|-----------------------------------------------------------------|
+| `local`     | `npm run dev` (client/) + `uvicorn` (server/)                   |
+| `production`| SSH deploy on push to `main` → https://nf4lm.deleonanddeleon.com |
 
 ---
 
@@ -61,7 +61,8 @@ nf4lm/
 │   └── main.py
 ├── docs/
 │   ├── reference-spec.md
-│   └── decisions.md
+│   ├── decisions.md
+│   └── server-setup.md      One-time systemd + Droplet setup instructions
 ├── .env.example
 ├── makefile
 ├── requirements.txt
