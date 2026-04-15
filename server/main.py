@@ -8,7 +8,7 @@ app = FastAPI(title="nf4lm")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://nf4lm.deleonanddeleon.com"],
+    allow_origins=["https://nf4lm.deleonanddeleon.com"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
