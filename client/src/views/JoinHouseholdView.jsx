@@ -3,16 +3,22 @@ import { apiFetch } from "../utils/apiFetch";
 import Avatar from "../components/Avatar";
 
 const AVATAR_COLORS = [
-  "#E8623A",
-  "#6366F1",
-  "#10B981",
-  "#F59E0B",
-  "#EC4899",
-  "#8B5CF6",
-  "#3B82F6",
-  "#EF4444",
-  "#14B8A6",
-  "#F97316",
+  "#E05C5C",
+  "#E07A2F",
+  "#D4A017",
+  "#7AB648",
+  "#2DA874",
+  "#26A69A",
+  "#2196C8",
+  "#3B6FD4",
+  "#6750D4",
+  "#9B3DB8",
+  "#C2388C",
+  "#D44D6E",
+  "#5E7A8A",
+  "#6B7D4A",
+  "#A0522D",
+  "#7A7060",
 ];
 
 const s = {
@@ -56,6 +62,20 @@ const s = {
     outline: "none",
     fontFamily: "inherit",
     boxSizing: "border-box",
+  },
+  letterInput: {
+    width: "42px",
+    height: "42px",
+    fontSize: "20px",
+    fontWeight: "700",
+    textAlign: "center",
+    border: "1.5px solid var(--color-border)",
+    borderRadius: "var(--radius-sm)",
+    background: "#fff",
+    outline: "none",
+    fontFamily: "inherit",
+    flexShrink: 0,
+    textTransform: "uppercase",
   },
   colorRow: { display: "flex", gap: "10px", flexWrap: "wrap" },
   colorDot: (color, selected) => ({
@@ -109,11 +129,14 @@ export default function JoinHouseholdView({
 }) {
   const [alias, setAlias] = useState("");
   const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
+  const [avatarLetter, setAvatarLetter] = useState("");
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState(null);
 
   const householdName = householdPreview?.household_name ?? "a household";
-  const avatarLetter = alias.trim() ? alias.trim()[0].toUpperCase() : "?";
+  const resolvedLetter =
+    avatarLetter.toUpperCase() ||
+    (alias.trim() ? alias.trim()[0].toUpperCase() : "?");
 
   async function handleJoin(e) {
     e.preventDefault();
@@ -124,7 +147,7 @@ export default function JoinHouseholdView({
         method: "POST",
         body: JSON.stringify({
           alias: alias.trim() || null,
-          avatar_letter: avatarLetter,
+          avatar_letter: resolvedLetter,
           avatar_color: avatarColor,
         }),
       });
@@ -170,17 +193,32 @@ export default function JoinHouseholdView({
           <div>
             <label style={s.label}>Your avatar</label>
             <div style={s.avatarRow}>
-              <Avatar letter={avatarLetter} color={avatarColor} size={40} />
-              <div style={s.colorRow}>
-                {AVATAR_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    style={s.colorDot(c, c === avatarColor)}
-                    onClick={() => setAvatarColor(c)}
-                    aria-label={`Avatar colour ${c}`}
-                  />
-                ))}
+              <Avatar letter={resolvedLetter} color={avatarColor} size={40} />
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+              >
+                <input
+                  style={s.letterInput}
+                  type="text"
+                  maxLength={1}
+                  placeholder="A"
+                  value={avatarLetter}
+                  onChange={(e) =>
+                    setAvatarLetter(e.target.value.replace(/[^a-zA-Z0-9]/, ""))
+                  }
+                  aria-label="Avatar letter"
+                />
+                <div style={s.colorRow}>
+                  {AVATAR_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      style={s.colorDot(c, c === avatarColor)}
+                      onClick={() => setAvatarColor(c)}
+                      aria-label={`Avatar colour ${c}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </div>

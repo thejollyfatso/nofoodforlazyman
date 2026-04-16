@@ -3,16 +3,22 @@ import { apiFetch } from "../utils/apiFetch";
 import Avatar from "../components/Avatar";
 
 const AVATAR_COLORS = [
-  "#E8623A",
-  "#6366F1",
-  "#10B981",
-  "#F59E0B",
-  "#EC4899",
-  "#8B5CF6",
-  "#3B82F6",
-  "#EF4444",
-  "#14B8A6",
-  "#F97316",
+  "#E05C5C",
+  "#E07A2F",
+  "#D4A017",
+  "#7AB648",
+  "#2DA874",
+  "#26A69A",
+  "#2196C8",
+  "#3B6FD4",
+  "#6750D4",
+  "#9B3DB8",
+  "#C2388C",
+  "#D44D6E",
+  "#5E7A8A",
+  "#6B7D4A",
+  "#A0522D",
+  "#7A7060",
 ];
 
 const s = {
@@ -106,6 +112,20 @@ const s = {
     fontFamily: "inherit",
     boxSizing: "border-box",
   },
+  letterInput: {
+    width: "42px",
+    height: "42px",
+    fontSize: "20px",
+    fontWeight: "700",
+    textAlign: "center",
+    border: "1.5px solid var(--color-border)",
+    borderRadius: "var(--radius-sm)",
+    background: "#fff",
+    outline: "none",
+    fontFamily: "inherit",
+    flexShrink: 0,
+    textTransform: "uppercase",
+  },
   colorRow: { display: "flex", gap: "10px", flexWrap: "wrap" },
   colorDot: (color, selected) => ({
     width: 32,
@@ -197,6 +217,7 @@ export default function HouseholdsView({
   const [householdName, setHouseholdName] = useState("");
   const [alias, setAlias] = useState("");
   const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
+  const [avatarLetter, setAvatarLetter] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(null);
 
@@ -207,10 +228,9 @@ export default function HouseholdsView({
       .finally(() => setLoading(false));
   }, []);
 
-  function avatarLetter(aliasStr) {
-    const trimmed = (aliasStr || "").trim();
-    return trimmed ? trimmed[0].toUpperCase() : "?";
-  }
+  const resolvedLetter =
+    avatarLetter.toUpperCase() ||
+    (alias.trim() ? alias.trim()[0].toUpperCase() : "?");
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -224,7 +244,7 @@ export default function HouseholdsView({
         body: JSON.stringify({
           name,
           alias: alias.trim() || null,
-          avatar_letter: avatarLetter(alias),
+          avatar_letter: resolvedLetter,
           avatar_color: avatarColor,
         }),
       });
@@ -243,6 +263,7 @@ export default function HouseholdsView({
     setHouseholdName("");
     setAlias("");
     setAvatarColor(AVATAR_COLORS[0]);
+    setAvatarLetter("");
     setCreateError(null);
   }
 
@@ -359,21 +380,38 @@ export default function HouseholdsView({
             <div>
               <label style={s.label}>Your avatar</label>
               <div style={s.avatarPreview}>
-                <Avatar
-                  letter={avatarLetter(alias)}
-                  color={avatarColor}
-                  size={40}
-                />
-                <div style={s.colorRow}>
-                  {AVATAR_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      style={s.colorDot(c, c === avatarColor)}
-                      onClick={() => setAvatarColor(c)}
-                      aria-label={`Avatar color ${c}`}
-                    />
-                  ))}
+                <Avatar letter={resolvedLetter} color={avatarColor} size={40} />
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  <input
+                    style={s.letterInput}
+                    type="text"
+                    maxLength={1}
+                    placeholder="A"
+                    value={avatarLetter}
+                    onChange={(e) =>
+                      setAvatarLetter(
+                        e.target.value.replace(/[^a-zA-Z0-9]/, "")
+                      )
+                    }
+                    aria-label="Avatar letter"
+                  />
+                  <div style={s.colorRow}>
+                    {AVATAR_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        style={s.colorDot(c, c === avatarColor)}
+                        onClick={() => setAvatarColor(c)}
+                        aria-label={`Avatar color ${c}`}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -408,7 +446,9 @@ export default function HouseholdsView({
         {households.map((h) => (
           <div key={h.id} style={s.card} onClick={() => onOpenHousehold(h.id)}>
             <Avatar
-              letter={h.avatar_letter || avatarLetter(h.alias)}
+              letter={
+                h.avatar_letter || (h.alias ? h.alias[0].toUpperCase() : "?")
+              }
               color={h.avatar_color}
               size={44}
             />
