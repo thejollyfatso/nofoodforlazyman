@@ -156,13 +156,42 @@ const s = {
   },
   chevron: { color: "#9ca3af", fontSize: "20px", flexShrink: 0 },
   avatarPreview: { display: "flex", alignItems: "center", gap: "12px" },
+  joinBtn: {
+    background: "#fff",
+    color: "#374151",
+    border: "1.5px solid var(--color-border)",
+    borderRadius: "var(--radius-md)",
+    padding: "14px",
+    fontSize: "16px",
+    fontWeight: "600",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    width: "100%",
+  },
+  joinInput: {
+    width: "100%",
+    padding: "11px 13px",
+    fontSize: "16px",
+    border: "1.5px solid var(--color-border)",
+    borderRadius: "var(--radius-sm)",
+    background: "#fff",
+    outline: "none",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+  },
 };
 
-export default function HouseholdsView({ onOpenHousehold, onLogout }) {
+export default function HouseholdsView({
+  onOpenHousehold,
+  onLogout,
+  onJoinWithToken,
+}) {
   const [households, setHouseholds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
+  const [joinLink, setJoinLink] = useState("");
 
   // Create form state
   const [householdName, setHouseholdName] = useState("");
@@ -222,6 +251,23 @@ export default function HouseholdsView({ onOpenHousehold, onLogout }) {
     resetForm();
   }
 
+  function handleJoinSubmit(e) {
+    e.preventDefault();
+    const raw = joinLink.trim();
+    if (!raw) return;
+    let token = raw;
+    try {
+      const url = new URL(raw);
+      const param = url.searchParams.get("join");
+      if (param) token = param;
+    } catch {
+      // not a URL, treat as raw token
+    }
+    setShowJoin(false);
+    setJoinLink("");
+    onJoinWithToken(token);
+  }
+
   return (
     <div style={s.page}>
       <div style={s.header}>
@@ -234,10 +280,48 @@ export default function HouseholdsView({ onOpenHousehold, onLogout }) {
       <div style={s.body}>
         {error && <div style={s.error}>{error}</div>}
 
-        {!loading && !showCreate && (
-          <button style={s.addBtn} onClick={() => setShowCreate(true)}>
-            + New household
-          </button>
+        {!loading && !showCreate && !showJoin && (
+          <>
+            <button style={s.addBtn} onClick={() => setShowCreate(true)}>
+              + New household
+            </button>
+            <button style={s.joinBtn} onClick={() => setShowJoin(true)}>
+              Join with invite link
+            </button>
+          </>
+        )}
+
+        {showJoin && (
+          <form style={s.formCard} onSubmit={handleJoinSubmit}>
+            <p style={s.formTitle}>Join a household</p>
+            <div>
+              <label style={s.label}>Paste invite link or token</label>
+              <input
+                style={s.joinInput}
+                type="text"
+                placeholder="https://… or paste token"
+                value={joinLink}
+                onChange={(e) => setJoinLink(e.target.value)}
+                autoFocus
+                required
+              />
+            </div>
+            <div style={s.formActions}>
+              <button
+                type="button"
+                style={s.cancelBtn}
+                onClick={() => {
+                  setShowJoin(false);
+                  setJoinLink("");
+                }}
+              >
+                Cancel
+              </button>
+              <button type="submit" style={s.submitBtn}>
+                Continue
+              </button>
+            </div>
+          </form>
         )}
 
         {showCreate && (
@@ -251,7 +335,7 @@ export default function HouseholdsView({ onOpenHousehold, onLogout }) {
               <input
                 style={s.input}
                 type="text"
-                placeholder="e.g. The DeLeon Family"
+                placeholder="Family name"
                 value={householdName}
                 onChange={(e) => setHouseholdName(e.target.value)}
                 autoFocus

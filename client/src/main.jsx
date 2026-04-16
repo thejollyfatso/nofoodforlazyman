@@ -21,21 +21,35 @@ function App() {
   } = useAppState();
 
   // Extract join token from URL once on mount
-  const joinToken = useMemo(() => {
+  const urlJoinToken = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("join");
   }, []);
+
+  const [manualJoinToken, setManualJoinToken] = useState(null);
+  const joinToken = manualJoinToken ?? urlJoinToken;
 
   const [joinPreview, setJoinPreview] = useState(null);
   const [joinDismissed, setJoinDismissed] = useState(false);
 
   useEffect(() => {
     if (!joinToken) return;
+    let cancelled = false;
     fetch(`${BASE_URL}/households/invites/${joinToken}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setJoinPreview(data))
+      .then((data) => {
+        if (!cancelled) setJoinPreview(data);
+      })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [joinToken]);
+
+  function handleJoinWithToken(token) {
+    setJoinDismissed(false);
+    setManualJoinToken(token);
+  }
 
   function clearJoinParam() {
     const url = new URL(window.location.href);
@@ -58,11 +72,13 @@ function App() {
         householdPreview={joinPreview}
         onJoined={(household) => {
           setJoinDismissed(true);
+          setManualJoinToken(null);
           clearJoinParam();
           openHousehold(household.id);
         }}
         onCancel={() => {
           setJoinDismissed(true);
+          setManualJoinToken(null);
           clearJoinParam();
         }}
       />
@@ -79,7 +95,11 @@ function App() {
   }
 
   return (
-    <HouseholdsView onOpenHousehold={openHousehold} onLogout={handleLogout} />
+    <HouseholdsView
+      onOpenHousehold={openHousehold}
+      onLogout={handleLogout}
+      onJoinWithToken={handleJoinWithToken}
+    />
   );
 }
 
