@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from server.db import get_db
 
-router = APIRouter()
+router = APIRouter(tags=["Auth"])
 
 SECRET = os.getenv("BETTER_AUTH_SECRET", "")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")

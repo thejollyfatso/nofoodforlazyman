@@ -94,6 +94,7 @@ nf4lm/
 - Shopping writes are always full rewrites (DELETE-all + INSERT-all in one
   transaction). Check/uncheck and substitution are the only PATCH operations.
 - SSE endpoint (`/events`) is never cached by the service worker.
+- Each router must declare its OpenAPI tag via `APIRouter(tags=["..."])`. Use title-case: `Auth`, `Households`, `Recipes`, `Shopping`, `Events`, `Users`.
 
 ### Naming
 

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from server.db import get_db
 from server.deps import CurrentUserDep
 
-router = APIRouter()
+router = APIRouter(tags=["Households"])
 
 INVITE_TTL_DAYS = 7
 
