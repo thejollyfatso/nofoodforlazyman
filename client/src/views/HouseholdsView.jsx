@@ -3,8 +3,16 @@ import { apiFetch } from "../utils/apiFetch";
 import Avatar from "../components/Avatar";
 
 const AVATAR_COLORS = [
-  "#E8623A", "#6366F1", "#10B981", "#F59E0B", "#EC4899",
-  "#8B5CF6", "#3B82F6", "#EF4444", "#14B8A6", "#F97316",
+  "#E8623A",
+  "#6366F1",
+  "#10B981",
+  "#F59E0B",
+  "#EC4899",
+  "#8B5CF6",
+  "#3B82F6",
+  "#EF4444",
+  "#14B8A6",
+  "#F97316",
 ];
 
 const s = {
@@ -30,7 +38,12 @@ const s = {
     cursor: "pointer",
     fontFamily: "inherit",
   },
-  body: { padding: "16px 20px", display: "flex", flexDirection: "column", gap: "12px" },
+  body: {
+    padding: "16px 20px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
   card: {
     background: "#fff",
     border: "1.5px solid var(--color-border)",
@@ -42,7 +55,14 @@ const s = {
     cursor: "pointer",
   },
   cardInfo: { flex: 1, minWidth: 0 },
-  cardName: { fontSize: "17px", fontWeight: "600", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  cardName: {
+    fontSize: "17px",
+    fontWeight: "600",
+    margin: 0,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
   cardMeta: { fontSize: "13px", color: "#6b7280", margin: "2px 0 0" },
   addBtn: {
     background: "var(--color-primary)",
@@ -68,7 +88,13 @@ const s = {
     gap: "14px",
   },
   formTitle: { fontSize: "16px", fontWeight: "600", margin: 0 },
-  label: { fontSize: "13px", fontWeight: "500", color: "#374151", display: "block", marginBottom: "6px" },
+  label: {
+    fontSize: "13px",
+    fontWeight: "500",
+    color: "#374151",
+    display: "block",
+    marginBottom: "6px",
+  },
   input: {
     width: "100%",
     padding: "11px 13px",
@@ -122,7 +148,12 @@ const s = {
     borderRadius: "var(--radius-sm)",
     padding: "10px 14px",
   },
-  empty: { textAlign: "center", color: "#6b7280", padding: "40px 0 20px", fontSize: "15px" },
+  empty: {
+    textAlign: "center",
+    color: "#6b7280",
+    padding: "40px 0 20px",
+    fontSize: "15px",
+  },
   chevron: { color: "#9ca3af", fontSize: "20px", flexShrink: 0 },
   avatarPreview: { display: "flex", alignItems: "center", gap: "12px" },
 };
@@ -195,7 +226,9 @@ export default function HouseholdsView({ onOpenHousehold, onLogout }) {
     <div style={s.page}>
       <div style={s.header}>
         <h1 style={s.title}>Households</h1>
-        <button style={s.signOut} onClick={onLogout}>Sign out</button>
+        <button style={s.signOut} onClick={onLogout}>
+          Sign out
+        </button>
       </div>
 
       <div style={s.body}>
@@ -227,7 +260,9 @@ export default function HouseholdsView({ onOpenHousehold, onLogout }) {
             </div>
 
             <div>
-              <label style={s.label}>Your alias in this household (optional)</label>
+              <label style={s.label}>
+                Your alias in this household (optional)
+              </label>
               <input
                 style={s.input}
                 type="text"
@@ -240,7 +275,11 @@ export default function HouseholdsView({ onOpenHousehold, onLogout }) {
             <div>
               <label style={s.label}>Your avatar</label>
               <div style={s.avatarPreview}>
-                <Avatar letter={avatarLetter(alias)} color={avatarColor} size={40} />
+                <Avatar
+                  letter={avatarLetter(alias)}
+                  color={avatarColor}
+                  size={40}
+                />
                 <div style={s.colorRow}>
                   {AVATAR_COLORS.map((c) => (
                     <button
@@ -256,7 +295,11 @@ export default function HouseholdsView({ onOpenHousehold, onLogout }) {
             </div>
 
             <div style={s.formActions}>
-              <button type="button" style={s.cancelBtn} onClick={handleCancelCreate}>
+              <button
+                type="button"
+                style={s.cancelBtn}
+                onClick={handleCancelCreate}
+              >
                 Cancel
               </button>
               <button type="submit" style={s.submitBtn} disabled={creating}>
@@ -267,7 +310,9 @@ export default function HouseholdsView({ onOpenHousehold, onLogout }) {
         )}
 
         {loading && (
-          <p style={{ color: "#6b7280", textAlign: "center", padding: "32px 0" }}>
+          <p
+            style={{ color: "#6b7280", textAlign: "center", padding: "32px 0" }}
+          >
             Loading…
           </p>
         )}

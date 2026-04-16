@@ -40,7 +40,11 @@ function App() {
   function clearJoinParam() {
     const url = new URL(window.location.href);
     url.searchParams.delete("join");
-    window.history.replaceState({}, "", url.pathname + (url.search !== "?" ? url.search : ""));
+    window.history.replaceState(
+      {},
+      "",
+      url.pathname + (url.search !== "?" ? url.search : "")
+    );
   }
 
   if (!isAuthenticated) {
@@ -75,10 +79,7 @@ function App() {
   }
 
   return (
-    <HouseholdsView
-      onOpenHousehold={openHousehold}
-      onLogout={handleLogout}
-    />
+    <HouseholdsView onOpenHousehold={openHousehold} onLogout={handleLogout} />
   );
 }
 

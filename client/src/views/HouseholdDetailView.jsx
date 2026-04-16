@@ -3,13 +3,31 @@ import { apiFetch } from "../utils/apiFetch";
 import Avatar from "../components/Avatar";
 
 const AVATAR_COLORS = [
-  "#E8623A", "#6366F1", "#10B981", "#F59E0B", "#EC4899",
-  "#8B5CF6", "#3B82F6", "#EF4444", "#14B8A6", "#F97316",
+  "#E8623A",
+  "#6366F1",
+  "#10B981",
+  "#F59E0B",
+  "#EC4899",
+  "#8B5CF6",
+  "#3B82F6",
+  "#EF4444",
+  "#14B8A6",
+  "#F97316",
 ];
 
 const s = {
-  page: { minHeight: "100dvh", background: "var(--color-bg)", display: "flex", flexDirection: "column" },
-  header: { display: "flex", alignItems: "center", gap: "12px", padding: "16px 20px" },
+  page: {
+    minHeight: "100dvh",
+    background: "var(--color-bg)",
+    display: "flex",
+    flexDirection: "column",
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "16px 20px",
+  },
   backBtn: {
     background: "none",
     border: "none",
@@ -20,7 +38,16 @@ const s = {
     fontFamily: "inherit",
     flexShrink: 0,
   },
-  headerName: { fontSize: "20px", fontWeight: "700", margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  headerName: {
+    fontSize: "20px",
+    fontWeight: "700",
+    margin: 0,
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
   editNameBtn: {
     background: "none",
     border: "none",
@@ -40,18 +67,51 @@ const s = {
     fontFamily: "inherit",
     outline: "none",
   },
-  body: { padding: "0 20px 32px", display: "flex", flexDirection: "column", gap: "20px" },
+  body: {
+    padding: "0 20px 32px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+  },
   section: {
     background: "#fff",
     border: "1.5px solid var(--color-border)",
     borderRadius: "var(--radius-md)",
     overflow: "hidden",
   },
-  sectionHeader: { padding: "12px 16px", borderBottom: "1px solid var(--color-border)", fontSize: "13px", fontWeight: "600", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" },
-  memberRow: { display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px", borderBottom: "1px solid var(--color-border)" },
+  sectionHeader: {
+    padding: "12px 16px",
+    borderBottom: "1px solid var(--color-border)",
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#6b7280",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+  },
+  memberRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "12px 16px",
+    borderBottom: "1px solid var(--color-border)",
+  },
   memberInfo: { flex: 1, minWidth: 0 },
-  memberName: { fontSize: "15px", fontWeight: "500", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  memberEmail: { fontSize: "12px", color: "#9ca3af", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  memberName: {
+    fontSize: "15px",
+    fontWeight: "500",
+    margin: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  memberEmail: {
+    fontSize: "12px",
+    color: "#9ca3af",
+    margin: "2px 0 0",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
   roleBadge: (role) => ({
     fontSize: "11px",
     fontWeight: "600",
@@ -72,7 +132,13 @@ const s = {
     fontFamily: "inherit",
   }),
   // My profile / edit section
-  label: { fontSize: "13px", fontWeight: "500", color: "#374151", display: "block", marginBottom: "6px" },
+  label: {
+    fontSize: "13px",
+    fontWeight: "500",
+    color: "#374151",
+    display: "block",
+    marginBottom: "6px",
+  },
   input: {
     width: "100%",
     padding: "11px 13px",
@@ -84,7 +150,12 @@ const s = {
     fontFamily: "inherit",
     boxSizing: "border-box",
   },
-  colorRow: { display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "8px" },
+  colorRow: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+    marginTop: "8px",
+  },
   colorDot: (color, selected) => ({
     width: 32,
     height: 32,
@@ -144,9 +215,20 @@ const s = {
     cursor: "pointer",
     fontFamily: "inherit",
   },
-  error: { fontSize: "14px", color: "var(--color-danger)", background: "#fef2f2", borderRadius: "var(--radius-sm)", padding: "10px 14px" },
+  error: {
+    fontSize: "14px",
+    color: "var(--color-danger)",
+    background: "#fef2f2",
+    borderRadius: "var(--radius-sm)",
+    padding: "10px 14px",
+  },
   sectionPad: { padding: "16px" },
-  avatarRow: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" },
+  avatarRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "12px",
+  },
 };
 
 function displayName(member) {
@@ -249,7 +331,9 @@ export default function HouseholdDetailView({ householdId, onBack }) {
     e.preventDefault();
     setSavingProfile(true);
     setProfileError(null);
-    const letter = profileAlias.trim() ? profileAlias.trim()[0].toUpperCase() : "?";
+    const letter = profileAlias.trim()
+      ? profileAlias.trim()[0].toUpperCase()
+      : "?";
     try {
       const updated = await apiFetch(`/households/${householdId}/members/me`, {
         method: "PATCH",
@@ -272,7 +356,9 @@ export default function HouseholdDetailView({ householdId, onBack }) {
     setGeneratingInvite(true);
     setActionError(null);
     try {
-      const data = await apiFetch(`/households/${householdId}/invite`, { method: "POST" });
+      const data = await apiFetch(`/households/${householdId}/invite`, {
+        method: "POST",
+      });
       setInviteToken(data.token);
       setCopied(false);
     } catch (err) {
@@ -296,7 +382,9 @@ export default function HouseholdDetailView({ householdId, onBack }) {
   async function handleRemoveMember(userId) {
     setActionError(null);
     try {
-      await apiFetch(`/households/${householdId}/members/${userId}`, { method: "DELETE" });
+      await apiFetch(`/households/${householdId}/members/${userId}`, {
+        method: "DELETE",
+      });
       setHousehold((prev) => ({
         ...prev,
         members: prev.members.filter((m) => m.user_id !== userId),
@@ -349,7 +437,9 @@ export default function HouseholdDetailView({ householdId, onBack }) {
 
   if (loading) {
     return (
-      <div style={{ ...s.page, alignItems: "center", justifyContent: "center" }}>
+      <div
+        style={{ ...s.page, alignItems: "center", justifyContent: "center" }}
+      >
         <p style={{ color: "#6b7280" }}>Loading…</p>
       </div>
     );
@@ -359,7 +449,9 @@ export default function HouseholdDetailView({ householdId, onBack }) {
     return (
       <div style={s.page}>
         <div style={s.header}>
-          <button style={s.backBtn} onClick={onBack}>‹ Back</button>
+          <button style={s.backBtn} onClick={onBack}>
+            ‹ Back
+          </button>
         </div>
         <div style={{ padding: "0 20px" }}>
           <div style={s.error}>{error}</div>
@@ -377,29 +469,64 @@ export default function HouseholdDetailView({ householdId, onBack }) {
       {confirm && (
         <div
           style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
-            display: "flex", alignItems: "flex-end", justifyContent: "center",
-            zIndex: 100, padding: "0 0 32px",
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            zIndex: 100,
+            padding: "0 0 32px",
           }}
           onClick={() => setConfirm(null)}
         >
           <div
             style={{
-              background: "#fff", borderRadius: "var(--radius-lg)", padding: "24px 20px",
-              width: "100%", maxWidth: "480px", display: "flex", flexDirection: "column", gap: "16px",
+              background: "#fff",
+              borderRadius: "var(--radius-lg)",
+              padding: "24px 20px",
+              width: "100%",
+              maxWidth: "480px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <p style={{ margin: 0, fontSize: "16px", fontWeight: "500" }}>{confirm.message}</p>
+            <p style={{ margin: 0, fontSize: "16px", fontWeight: "500" }}>
+              {confirm.message}
+            </p>
             <div style={{ display: "flex", gap: "10px" }}>
               <button
-                style={{ flex: 1, padding: "12px", fontSize: "15px", fontWeight: "600", background: "#fff", color: "#374151", border: "1.5px solid var(--color-border)", borderRadius: "var(--radius-sm)", cursor: "pointer", fontFamily: "inherit" }}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  background: "#fff",
+                  color: "#374151",
+                  border: "1.5px solid var(--color-border)",
+                  borderRadius: "var(--radius-sm)",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
                 onClick={() => setConfirm(null)}
               >
                 Cancel
               </button>
               <button
-                style={{ flex: 1, padding: "12px", fontSize: "15px", fontWeight: "600", background: "var(--color-danger)", color: "#fff", border: "none", borderRadius: "var(--radius-sm)", cursor: "pointer", fontFamily: "inherit" }}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  background: "var(--color-danger)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "var(--radius-sm)",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
                 onClick={confirm.onConfirm}
               >
                 Confirm
@@ -411,9 +538,19 @@ export default function HouseholdDetailView({ householdId, onBack }) {
 
       {/* Header */}
       <div style={s.header}>
-        <button style={s.backBtn} onClick={onBack}>‹ Back</button>
+        <button style={s.backBtn} onClick={onBack}>
+          ‹ Back
+        </button>
         {editingName ? (
-          <form style={{ display: "flex", flex: 1, gap: "8px", alignItems: "center" }} onSubmit={handleSaveName}>
+          <form
+            style={{
+              display: "flex",
+              flex: 1,
+              gap: "8px",
+              alignItems: "center",
+            }}
+            onSubmit={handleSaveName}
+          >
             <input
               style={s.editNameInput}
               value={nameInput}
@@ -421,10 +558,22 @@ export default function HouseholdDetailView({ householdId, onBack }) {
               autoFocus
               required
             />
-            <button type="submit" style={{ ...s.backBtn, color: "var(--color-primary)", fontWeight: "600" }} disabled={savingName}>
+            <button
+              type="submit"
+              style={{
+                ...s.backBtn,
+                color: "var(--color-primary)",
+                fontWeight: "600",
+              }}
+              disabled={savingName}
+            >
               {savingName ? "…" : "Save"}
             </button>
-            <button type="button" style={{ ...s.backBtn, color: "#9ca3af" }} onClick={() => setEditingName(false)}>
+            <button
+              type="button"
+              style={{ ...s.backBtn, color: "#9ca3af" }}
+              onClick={() => setEditingName(false)}
+            >
               ✕
             </button>
           </form>
@@ -432,7 +581,11 @@ export default function HouseholdDetailView({ householdId, onBack }) {
           <>
             <h1 style={s.headerName}>{household.name}</h1>
             {isOwner && (
-              <button style={s.editNameBtn} onClick={startEditName} title="Edit name">
+              <button
+                style={s.editNameBtn}
+                onClick={startEditName}
+                title="Edit name"
+              >
                 ✎
               </button>
             )}
@@ -454,7 +607,9 @@ export default function HouseholdDetailView({ householdId, onBack }) {
                 key={member.user_id}
                 style={{
                   ...s.memberRow,
-                  borderBottom: isLast ? "none" : "1px solid var(--color-border)",
+                  borderBottom: isLast
+                    ? "none"
+                    : "1px solid var(--color-border)",
                 }}
               >
                 <Avatar
@@ -464,11 +619,10 @@ export default function HouseholdDetailView({ householdId, onBack }) {
                 />
                 <div style={s.memberInfo}>
                   <p style={s.memberName}>
-                    {displayName(member)}{isMe ? " (you)" : ""}
+                    {displayName(member)}
+                    {isMe ? " (you)" : ""}
                   </p>
-                  {member.alias && (
-                    <p style={s.memberEmail}>{member.email}</p>
-                  )}
+                  {member.alias && <p style={s.memberEmail}>{member.email}</p>}
                 </div>
                 <span style={s.roleBadge(member.role)}>
                   {member.role === "owner" ? "Owner" : "Member"}
@@ -511,7 +665,9 @@ export default function HouseholdDetailView({ householdId, onBack }) {
           <div style={s.sectionHeader}>My profile in this household</div>
           <div style={s.sectionPad}>
             {!editingProfile ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "14px" }}
+              >
                 <Avatar
                   letter={me ? avatarLetter(me) : "?"}
                   color={me?.avatar_color || AVATAR_COLORS[0]}
@@ -519,14 +675,27 @@ export default function HouseholdDetailView({ householdId, onBack }) {
                 />
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, fontWeight: "500", fontSize: "15px" }}>
-                    {me?.alias || <span style={{ color: "#9ca3af" }}>No alias set</span>}
+                    {me?.alias || (
+                      <span style={{ color: "#9ca3af" }}>No alias set</span>
+                    )}
                   </p>
-                  <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9ca3af" }}>
+                  <p
+                    style={{
+                      margin: "2px 0 0",
+                      fontSize: "12px",
+                      color: "#9ca3af",
+                    }}
+                  >
                     Tap Edit to update your alias and avatar
                   </p>
                 </div>
                 <button
-                  style={{ ...s.iconBtn(false), color: "var(--color-primary)", fontWeight: "600", fontSize: "14px" }}
+                  style={{
+                    ...s.iconBtn(false),
+                    color: "var(--color-primary)",
+                    fontWeight: "600",
+                    fontSize: "14px",
+                  }}
                   onClick={() => {
                     setProfileAlias(me?.alias || "");
                     setProfileColor(me?.avatar_color || AVATAR_COLORS[0]);
@@ -537,7 +706,14 @@ export default function HouseholdDetailView({ householdId, onBack }) {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSaveProfile} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <form
+                onSubmit={handleSaveProfile}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
                 {profileError && <div style={s.error}>{profileError}</div>}
                 <div>
                   <label style={s.label}>Alias</label>
@@ -554,7 +730,11 @@ export default function HouseholdDetailView({ householdId, onBack }) {
                   <label style={s.label}>Avatar colour</label>
                   <div style={s.avatarRow}>
                     <Avatar
-                      letter={profileAlias.trim() ? profileAlias.trim()[0].toUpperCase() : "?"}
+                      letter={
+                        profileAlias.trim()
+                          ? profileAlias.trim()[0].toUpperCase()
+                          : "?"
+                      }
                       color={profileColor}
                       size={40}
                     />
@@ -574,12 +754,27 @@ export default function HouseholdDetailView({ householdId, onBack }) {
                 <div style={{ display: "flex", gap: "10px" }}>
                   <button
                     type="button"
-                    style={{ flex: 1, padding: "11px", fontSize: "15px", fontWeight: "600", background: "#fff", color: "#374151", border: "1.5px solid var(--color-border)", borderRadius: "var(--radius-sm)", cursor: "pointer", fontFamily: "inherit" }}
+                    style={{
+                      flex: 1,
+                      padding: "11px",
+                      fontSize: "15px",
+                      fontWeight: "600",
+                      background: "#fff",
+                      color: "#374151",
+                      border: "1.5px solid var(--color-border)",
+                      borderRadius: "var(--radius-sm)",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
                     onClick={() => setEditingProfile(false)}
                   >
                     Cancel
                   </button>
-                  <button type="submit" style={{ flex: 2, ...s.saveBtn, marginTop: 0 }} disabled={savingProfile}>
+                  <button
+                    type="submit"
+                    style={{ flex: 2, ...s.saveBtn, marginTop: 0 }}
+                    disabled={savingProfile}
+                  >
                     {savingProfile ? "Saving…" : "Save"}
                   </button>
                 </div>

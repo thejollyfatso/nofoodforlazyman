@@ -3,8 +3,16 @@ import { apiFetch } from "../utils/apiFetch";
 import Avatar from "../components/Avatar";
 
 const AVATAR_COLORS = [
-  "#E8623A", "#6366F1", "#10B981", "#F59E0B", "#EC4899",
-  "#8B5CF6", "#3B82F6", "#EF4444", "#14B8A6", "#F97316",
+  "#E8623A",
+  "#6366F1",
+  "#10B981",
+  "#F59E0B",
+  "#EC4899",
+  "#8B5CF6",
+  "#3B82F6",
+  "#EF4444",
+  "#14B8A6",
+  "#F97316",
 ];
 
 const s = {
@@ -31,7 +39,13 @@ const s = {
   heading: { fontSize: "22px", fontWeight: "700", margin: 0 },
   sub: { fontSize: "15px", color: "#6b7280", margin: "4px 0 0" },
   householdName: { color: "#1a1a1a", fontWeight: "600" },
-  label: { fontSize: "13px", fontWeight: "500", color: "#374151", display: "block", marginBottom: "6px" },
+  label: {
+    fontSize: "13px",
+    fontWeight: "500",
+    color: "#374151",
+    display: "block",
+    marginBottom: "6px",
+  },
   input: {
     width: "100%",
     padding: "11px 13px",
@@ -87,7 +101,12 @@ const s = {
   },
 };
 
-export default function JoinHouseholdView({ token, householdPreview, onJoined, onCancel }) {
+export default function JoinHouseholdView({
+  token,
+  householdPreview,
+  onJoined,
+  onCancel,
+}) {
   const [alias, setAlias] = useState("");
   const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
   const [joining, setJoining] = useState(false);
@@ -130,9 +149,14 @@ export default function JoinHouseholdView({ token, householdPreview, onJoined, o
 
         {error && <div style={s.error}>{error}</div>}
 
-        <form onSubmit={handleJoin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <form
+          onSubmit={handleJoin}
+          style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+        >
           <div>
-            <label style={s.label}>Your alias in this household (optional)</label>
+            <label style={s.label}>
+              Your alias in this household (optional)
+            </label>
             <input
               style={s.input}
               type="text"
