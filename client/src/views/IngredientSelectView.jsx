@@ -162,7 +162,9 @@ export default function IngredientSelectView({
 
   function handleAdd() {
     if (selected.size === 0) return;
-    const ingredients = (recipe.ingredients || []).filter((_, i) => selected.has(i));
+    const ingredients = (recipe.ingredients || []).filter((_, i) =>
+      selected.has(i)
+    );
     onAddToList?.(recipe, ingredients);
   }
 
@@ -170,7 +172,9 @@ export default function IngredientSelectView({
     return (
       <div style={s.page}>
         <div style={s.header}>
-          <button style={s.backBtn} onClick={onBack}>‹ Back</button>
+          <button style={s.backBtn} onClick={onBack}>
+            ‹ Back
+          </button>
         </div>
       </div>
     );

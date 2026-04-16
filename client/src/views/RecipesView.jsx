@@ -187,7 +187,10 @@ export default function RecipesView({ onOpenRecipe, onNewRecipe }) {
 
   function filterRecipes() {
     const q = query.trim();
-    if (!q) return { sorted: [...recipes].sort((a, b) => a.title.localeCompare(b.title)) };
+    if (!q)
+      return {
+        sorted: [...recipes].sort((a, b) => a.title.localeCompare(b.title)),
+      };
 
     if (searchMode === "recipe") {
       const ql = q.toLowerCase();
@@ -269,7 +272,8 @@ export default function RecipesView({ onOpenRecipe, onNewRecipe }) {
 
     const issues = [];
     if (!data.version) issues.push("Missing version field");
-    else if (data.version !== 1) issues.push(`Unknown version: ${data.version}`);
+    else if (data.version !== 1)
+      issues.push(`Unknown version: ${data.version}`);
 
     const existingTitles = new Set(
       recipes.map((r) => r.title.trim().toLowerCase())
@@ -335,9 +339,7 @@ export default function RecipesView({ onOpenRecipe, onNewRecipe }) {
 
     setRecipes((prev) => {
       const updated = [...prev, ...added];
-      updated.sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
-      );
+      updated.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       return updated;
     });
 
@@ -402,13 +404,17 @@ export default function RecipesView({ onOpenRecipe, onNewRecipe }) {
         {matchAll.length > 0 && (
           <>
             <p style={s.sectionLabel}>All</p>
-            {matchAll.map((r) => <RecipeCard key={r.id} recipe={r} />)}
+            {matchAll.map((r) => (
+              <RecipeCard key={r.id} recipe={r} />
+            ))}
           </>
         )}
         {matchAny.length > 0 && (
           <>
             <p style={s.sectionLabel}>Any</p>
-            {matchAny.map((r) => <RecipeCard key={r.id} recipe={r} />)}
+            {matchAny.map((r) => (
+              <RecipeCard key={r.id} recipe={r} />
+            ))}
           </>
         )}
       </>

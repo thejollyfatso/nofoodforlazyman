@@ -172,10 +172,17 @@ export default function RecipeDetailView({
         if (cancelled) return;
         const found = list.find((r) => r.id === recipeId);
         if (!found) onBack();
-        else { setRecipe(found); setLoading(false); }
+        else {
+          setRecipe(found);
+          setLoading(false);
+        }
       })
-      .catch(() => { if (!cancelled) onBack(); });
-    return () => { cancelled = true; };
+      .catch(() => {
+        if (!cancelled) onBack();
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [recipeId, onBack]);
 
   if (loading) {

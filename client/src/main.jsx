@@ -49,11 +49,17 @@ function tabBtnStyle(active) {
 function TabBar({ activeTab, onSwitch }) {
   return (
     <div style={tabBarStyle}>
-      <button style={tabBtnStyle(activeTab === "recipes")} onClick={() => onSwitch("recipes")}>
+      <button
+        style={tabBtnStyle(activeTab === "recipes")}
+        onClick={() => onSwitch("recipes")}
+      >
         <span style={{ fontSize: "20px", lineHeight: 1 }}>📋</span>
         Recipes
       </button>
-      <button style={tabBtnStyle(activeTab === "households")} onClick={() => onSwitch("households")}>
+      <button
+        style={tabBtnStyle(activeTab === "households")}
+        onClick={() => onSwitch("households")}
+      >
         <span style={{ fontSize: "20px", lineHeight: 1 }}>🏠</span>
         Households
       </button>
@@ -96,9 +102,13 @@ function App() {
     let cancelled = false;
     fetch(`${BASE_URL}/households/invites/${joinToken}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (!cancelled) setJoinPreview(data); })
+      .then((data) => {
+        if (!cancelled) setJoinPreview(data);
+      })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [joinToken]);
 
   function handleJoinWithToken(token) {

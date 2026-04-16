@@ -17,7 +17,10 @@ export function formatQty(qty) {
   });
 
   // Standalone fraction: "1/2" → "½"
-  result = result.replace(/\b(\d+\/\d+)\b/g, (_, frac) => FRAC_MAP[frac] || frac);
+  result = result.replace(
+    /\b(\d+\/\d+)\b/g,
+    (_, frac) => FRAC_MAP[frac] || frac
+  );
 
   return result;
 }

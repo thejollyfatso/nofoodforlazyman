@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "../utils/apiFetch";
-import { parseIngredients, serializeIngredients } from "../utils/ingredientParser";
+import {
+  parseIngredients,
+  serializeIngredients,
+} from "../utils/ingredientParser";
 import { useToast, Toast } from "../components/Toast";
 
 let _uid = 0;
@@ -16,18 +19,18 @@ function ingredientToRow(ing) {
   const range = isRangeQty(ing.qty);
   return {
     _id: uid(),
-    qty: range ? "" : (ing.qty || ""),
+    qty: range ? "" : ing.qty || "",
     unit: ing.unit || "",
     name: ing.name || "",
     optional: !!ing.optional,
-    rangeQty: range ? (ing.qty || "") : "",
+    rangeQty: range ? ing.qty || "" : "",
     subs: (ing.substitutions || []).map((s) => ({
       _id: uid(),
       qty: s.qty || "",
       unit: s.unit || "",
       name: s.name || "",
     })),
-    expanded: !!ing.optional || !!(ing.substitutions?.length) || range,
+    expanded: !!ing.optional || !!ing.substitutions?.length || range,
   };
 }
 
@@ -41,7 +44,11 @@ function rowToIngredient(row) {
   if (row.optional) ing.optional = true;
   const subs = row.subs
     .filter((s) => s.name.trim())
-    .map((s) => ({ qty: s.qty.trim(), unit: s.unit.trim(), name: s.name.trim() }));
+    .map((s) => ({
+      qty: s.qty.trim(),
+      unit: s.unit.trim(),
+      name: s.name.trim(),
+    }));
   if (subs.length) ing.substitutions = subs;
   return ing;
 }
@@ -291,7 +298,12 @@ const s = {
   },
 };
 
-export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted }) {
+export default function RecipeEditView({
+  recipeId,
+  onBack,
+  onSaved,
+  onDeleted,
+}) {
   const isNew = !recipeId;
 
   const [title, setTitle] = useState("");
@@ -333,7 +345,8 @@ export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted })
     const count = parsed.length;
     setRows(parsed);
     setMode("manual");
-    if (pasteText.trim()) showToast(`Parsed ${count} ingredient${count === 1 ? "" : "s"}`);
+    if (pasteText.trim())
+      showToast(`Parsed ${count} ingredient${count === 1 ? "" : "s"}`);
   }
 
   function switchToPaste() {
@@ -381,7 +394,10 @@ export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted })
     setRows((prev) =>
       prev.map((r) =>
         r._id === rowId
-          ? { ...r, subs: [...r.subs, { _id: uid(), qty: "", unit: "", name: "" }] }
+          ? {
+              ...r,
+              subs: [...r.subs, { _id: uid(), qty: "", unit: "", name: "" }],
+            }
           : r
       )
     );
@@ -391,7 +407,12 @@ export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted })
     setRows((prev) =>
       prev.map((r) =>
         r._id === rowId
-          ? { ...r, subs: r.subs.map((s) => (s._id === subId ? { ...s, ...updates } : s)) }
+          ? {
+              ...r,
+              subs: r.subs.map((s) =>
+                s._id === subId ? { ...s, ...updates } : s
+              ),
+            }
           : r
       )
     );
@@ -400,7 +421,9 @@ export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted })
   function removeSub(rowId, subId) {
     setRows((prev) =>
       prev.map((r) =>
-        r._id === rowId ? { ...r, subs: r.subs.filter((s) => s._id !== subId) } : r
+        r._id === rowId
+          ? { ...r, subs: r.subs.filter((s) => s._id !== subId) }
+          : r
       )
     );
   }
@@ -474,7 +497,9 @@ export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted })
             onChange={(e) => updateRow(row._id, { unit: e.target.value })}
           />
           <input
-            ref={(el) => { if (el) nameRefs.current[row._id] = el; }}
+            ref={(el) => {
+              if (el) nameRefs.current[row._id] = el;
+            }}
             style={s.ingNameInput}
             type="text"
             placeholder="ingredient name"
@@ -500,7 +525,9 @@ export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted })
                 type="checkbox"
                 style={s.checkbox}
                 checked={row.optional}
-                onChange={(e) => updateRow(row._id, { optional: e.target.checked })}
+                onChange={(e) =>
+                  updateRow(row._id, { optional: e.target.checked })
+                }
               />
               Optional
             </label>
@@ -508,11 +535,17 @@ export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted })
             <div>
               <span style={s.detailLabel}>Range qty (e.g. 1-2)</span>
               <input
-                style={{ ...s.ingInput("100%"), width: "100%", boxSizing: "border-box" }}
+                style={{
+                  ...s.ingInput("100%"),
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
                 type="text"
                 placeholder="e.g. 1-2 or 1 to 2"
                 value={row.rangeQty}
-                onChange={(e) => updateRow(row._id, { rangeQty: e.target.value })}
+                onChange={(e) =>
+                  updateRow(row._id, { rangeQty: e.target.value })
+                }
               />
             </div>
 
@@ -520,28 +553,37 @@ export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted })
               <div>
                 <span style={s.detailLabel}>Substitutions</span>
                 {row.subs.map((sub) => (
-                  <div key={sub._id} style={{ ...s.subRow, marginBottom: "6px" }}>
+                  <div
+                    key={sub._id}
+                    style={{ ...s.subRow, marginBottom: "6px" }}
+                  >
                     <input
                       style={s.ingInput("52px")}
                       type="text"
                       inputMode="decimal"
                       placeholder="qty"
                       value={sub.qty}
-                      onChange={(e) => updateSub(row._id, sub._id, { qty: e.target.value })}
+                      onChange={(e) =>
+                        updateSub(row._id, sub._id, { qty: e.target.value })
+                      }
                     />
                     <input
                       style={s.ingInput("72px")}
                       type="text"
                       placeholder="unit"
                       value={sub.unit}
-                      onChange={(e) => updateSub(row._id, sub._id, { unit: e.target.value })}
+                      onChange={(e) =>
+                        updateSub(row._id, sub._id, { unit: e.target.value })
+                      }
                     />
                     <input
                       style={s.ingNameInput}
                       type="text"
                       placeholder="substitute name"
                       value={sub.name}
-                      onChange={(e) => updateSub(row._id, sub._id, { name: e.target.value })}
+                      onChange={(e) =>
+                        updateSub(row._id, sub._id, { name: e.target.value })
+                      }
                     />
                     <button
                       style={s.removeBtn}
@@ -614,7 +656,9 @@ export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted })
           {mode === "paste" ? (
             <textarea
               style={s.pasteArea}
-              placeholder={"Paste ingredient list here…\ne.g.\n1 cup flour\n2 eggs\n1/2 tsp salt"}
+              placeholder={
+                "Paste ingredient list here…\ne.g.\n1 cup flour\n2 eggs\n1/2 tsp salt"
+              }
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
             />
@@ -630,7 +674,11 @@ export default function RecipeEditView({ recipeId, onBack, onSaved, onDeleted })
       </div>
 
       <div style={s.footer}>
-        <button style={s.saveBtn(saving)} onClick={handleSave} disabled={saving}>
+        <button
+          style={s.saveBtn(saving)}
+          onClick={handleSave}
+          disabled={saving}
+        >
           {saving ? "Saving…" : "Save"}
         </button>
         {!isNew && (
