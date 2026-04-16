@@ -1,35 +1,84 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import { useAppState } from "./state/useAppState";
 import LoginView from "./views/LoginView";
+import HouseholdsView from "./views/HouseholdsView";
+import HouseholdDetailView from "./views/HouseholdDetailView";
+import JoinHouseholdView from "./views/JoinHouseholdView";
+
+const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 function App() {
-  const { isAuthenticated, handleLogin, handleLogout } = useAppState();
+  const {
+    isAuthenticated,
+    handleLogin,
+    handleLogout,
+    view,
+    selectedHouseholdId,
+    openHousehold,
+    closeHousehold,
+  } = useAppState();
+
+  // Extract join token from URL once on mount
+  const joinToken = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("join");
+  }, []);
+
+  const [joinPreview, setJoinPreview] = useState(null);
+  const [joinDismissed, setJoinDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!joinToken) return;
+    fetch(`${BASE_URL}/households/invites/${joinToken}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setJoinPreview(data))
+      .catch(() => {});
+  }, [joinToken]);
+
+  function clearJoinParam() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("join");
+    window.history.replaceState({}, "", url.pathname + (url.search !== "?" ? url.search : ""));
+  }
 
   if (!isAuthenticated) {
-    return <LoginView onLogin={handleLogin} />;
+    return <LoginView onLogin={handleLogin} joinPreview={joinPreview} />;
+  }
+
+  if (joinToken && !joinDismissed) {
+    return (
+      <JoinHouseholdView
+        token={joinToken}
+        householdPreview={joinPreview}
+        onJoined={(household) => {
+          setJoinDismissed(true);
+          clearJoinParam();
+          openHousehold(household.id);
+        }}
+        onCancel={() => {
+          setJoinDismissed(true);
+          clearJoinParam();
+        }}
+      />
+    );
+  }
+
+  if (view === "household_detail" && selectedHouseholdId) {
+    return (
+      <HouseholdDetailView
+        householdId={selectedHouseholdId}
+        onBack={closeHousehold}
+      />
+    );
   }
 
   return (
-    <div style={{ padding: "24px" }}>
-      <p>Signed in. App coming soon.</p>
-      <button
-        onClick={handleLogout}
-        style={{
-          padding: "10px 20px",
-          background: "var(--color-primary)",
-          color: "#fff",
-          border: "none",
-          borderRadius: "var(--radius-sm)",
-          fontSize: "16px",
-          cursor: "pointer",
-          fontFamily: "inherit",
-        }}
-      >
-        Sign out
-      </button>
-    </div>
+    <HouseholdsView
+      onOpenHousehold={openHousehold}
+      onLogout={handleLogout}
+    />
   );
 }
 

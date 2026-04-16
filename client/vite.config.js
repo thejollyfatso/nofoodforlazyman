@@ -36,6 +36,10 @@ export default defineConfig({
         target: "http://localhost:8000",
         changeOrigin: true,
       },
+      "/households": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
       "/recipes": {
         target: "http://localhost:8000",
         changeOrigin: true,

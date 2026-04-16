@@ -42,4 +42,32 @@ def init_db():
                 expires_at TEXT NOT NULL,
                 used       INTEGER NOT NULL DEFAULT 0
             );
+
+            CREATE TABLE IF NOT EXISTS households (
+                id         TEXT PRIMARY KEY,
+                name       TEXT NOT NULL,
+                created_by TEXT NOT NULL REFERENCES users(id),
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS household_members (
+                household_id  TEXT NOT NULL REFERENCES households(id),
+                user_id       TEXT NOT NULL REFERENCES users(id),
+                role          TEXT NOT NULL CHECK (role IN ('owner', 'member')),
+                alias         TEXT,
+                avatar_letter TEXT,
+                avatar_color  TEXT,
+                joined_at     TEXT NOT NULL,
+                PRIMARY KEY (household_id, user_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS household_invites (
+                id               TEXT PRIMARY KEY,
+                household_id     TEXT NOT NULL REFERENCES households(id),
+                created_by       TEXT NOT NULL REFERENCES users(id),
+                token            TEXT NOT NULL UNIQUE,
+                created_at       TEXT NOT NULL,
+                expires_at       TEXT NOT NULL,
+                used_by_user_id  TEXT REFERENCES users(id)
+            );
         """)
