@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from server.db import init_db
-from server.routers import auth, households
+from server.routers import auth, households, recipes
 
 DIST_DIR = Path(__file__).parent.parent / "client" / "dist"
 ALLOWED_ORIGINS = ["https://nf4lm.deleonanddeleon.com"]
@@ -47,6 +47,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 app.include_router(auth.router, prefix="/auth")
 app.include_router(households.router, prefix="/households")
+app.include_router(recipes.router, prefix="/recipes")
 
 
 @app.get("/health")
@@ -55,8 +56,7 @@ def health():
 
 
 # TODO: wire up remaining routers once implemented
-# from server.routers import recipes, shopping, events
-# app.include_router(recipes.router, prefix="/recipes")
+# from server.routers import shopping, events
 # app.include_router(shopping.router, prefix="/shopping")
 # app.include_router(events.router)
 

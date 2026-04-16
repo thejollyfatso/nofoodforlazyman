@@ -70,4 +70,16 @@ def init_db():
                 expires_at       TEXT NOT NULL,
                 used_by_user_id  TEXT REFERENCES users(id)
             );
+
+            CREATE TABLE IF NOT EXISTS recipes (
+                id                  TEXT PRIMARY KEY,
+                user_id             TEXT NOT NULL REFERENCES users(id),
+                title               TEXT NOT NULL,
+                notes               TEXT NOT NULL DEFAULT '',
+                ingredients         TEXT NOT NULL DEFAULT '[]',
+                created_at          TEXT NOT NULL,
+                updated_at          TEXT NOT NULL,
+                copied_from_user_id TEXT,
+                copied_from_alias   TEXT
+            );
         """)
