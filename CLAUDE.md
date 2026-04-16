@@ -102,6 +102,12 @@ nf4lm/
 - API routes: snake_case, match the original API contract exactly
 - DB columns: snake_case
 
+### Definition of done for frontend work
+
+After any frontend change, run `npm run lint` inside `client/` and fix all
+errors before reporting the task complete. A build that passes TypeScript/Vite
+but fails lint is not done.
+
 ### What NOT to do
 
 - Do not use a client-side router
