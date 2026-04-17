@@ -490,7 +490,9 @@ function App() {
         onBack={selectedRecipeId ? backFromRecipeSubView : backToRecipes}
         onSaved={backToRecipes}
         onDeleted={backToRecipes}
-        activeHouseholdId={activeHousehold?.id ?? null}
+        activeHouseholdId={
+          navContext === "household" ? (activeHousehold?.id ?? null) : null
+        }
       />
     );
   }
@@ -534,7 +536,7 @@ function App() {
         <RecipesView
           onOpenRecipe={openRecipe}
           onNewRecipe={openNewRecipe}
-          activeHousehold={activeHousehold}
+          activeHousehold={navContext === "household" ? activeHousehold : null}
           onOpenHouseholdRecipe={openHouseholdRecipe}
         />
       )}
@@ -548,7 +550,7 @@ function App() {
       {view === "shopping" && (
         <ShoppingView
           shopping={shopping}
-          activeHousehold={activeHousehold}
+          activeHousehold={navContext === "household" ? activeHousehold : null}
           shoppingContextType={effectiveContextType}
           onSwitchContext={(type) => switchTab("shopping", type)}
           currentUserId={currentUserId}
