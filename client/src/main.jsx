@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import { useAppState } from "./state/useAppState";
+import { getDisplayContext, isAndroid } from "./utils/device";
 import { useShoppingList } from "./state/useShoppingList";
 import LoginView from "./views/LoginView";
 import HouseholdsView from "./views/HouseholdsView";
@@ -162,6 +163,75 @@ const IconPlan = () => (
     <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
   </svg>
 );
+
+// ── DeviceBanner ─────────────────────────────────────────────────────────────
+
+const BANNER_DISMISS_KEY = "device_banner_dismissed";
+
+function DeviceBanner() {
+  const [dismissed, setDismissed] = useState(
+    () => localStorage.getItem(BANNER_DISMISS_KEY) === "1"
+  );
+
+  const ctx = getDisplayContext();
+  if (dismissed || ctx === "installed") return null;
+
+  function dismiss() {
+    localStorage.setItem(BANNER_DISMISS_KEY, "1");
+    setDismissed(true);
+  }
+
+  let message;
+  if (ctx === "desktop-browser") {
+    message =
+      "Best on mobile — open this page on your phone for the full experience.";
+  } else if (isAndroid()) {
+    message =
+      "Install the app: tap \u22EE (menu) then \u201CAdd to Home Screen\u201D.";
+  } else {
+    message =
+      "Tap Share then \u201CAdd to Home Screen\u201D to install the app.";
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 300,
+        background: "var(--color-primary)",
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "10px 14px",
+        fontSize: "13px",
+        lineHeight: "1.4",
+        gap: "12px",
+      }}
+    >
+      <span>{message}</span>
+      <button
+        onClick={dismiss}
+        style={{
+          background: "none",
+          border: "none",
+          color: "#fff",
+          fontSize: "18px",
+          lineHeight: 1,
+          cursor: "pointer",
+          padding: "2px 4px",
+          flexShrink: 0,
+        }}
+        aria-label="Dismiss"
+      >
+        &times;
+      </button>
+    </div>
+  );
+}
 
 // ── NavBar ───────────────────────────────────────────────────────────────────
 
@@ -433,7 +503,12 @@ function App() {
   }
 
   if (!isAuthenticated) {
-    return <LoginView onLogin={handleLogin} joinPreview={joinPreview} />;
+    return (
+      <>
+        <DeviceBanner />
+        <LoginView onLogin={handleLogin} joinPreview={joinPreview} />
+      </>
+    );
   }
 
   if (joinToken && !joinDismissed) {
@@ -531,6 +606,7 @@ function App() {
   // Main tab views
   return (
     <>
+      <DeviceBanner />
       {view === "home" && (
         <HomeView
           shopping={shopping}
