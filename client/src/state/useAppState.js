@@ -14,14 +14,22 @@ function decodeTokenUserId(token) {
 
 export function useAppState() {
   const [token, setToken] = useState(() => localStorage.getItem("mk_token"));
-  const [view, setView] = useState("recipes");
+  const [view, setView] = useState("home");
+  const [navContext, setNavContext] = useState("personal");
   const [selectedHouseholdId, setSelectedHouseholdId] = useState(null);
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
   const [selectedRecipeSharedMeta, setSelectedRecipeSharedMeta] =
     useState(null);
   const [recipeNavStack, setRecipeNavStack] = useState([]);
-  const [preSettingsView, setPreSettingsView] = useState("recipes");
-  const [activeHousehold, setActiveHouseholdState] = useState(null);
+  const [preSettingsView, setPreSettingsView] = useState("home");
+  const [activeHousehold, setActiveHouseholdState] = useState(() => {
+    try {
+      const saved = localStorage.getItem("active_household");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const currentUserId = useMemo(() => decodeTokenUserId(token), [token]);
 
@@ -38,8 +46,10 @@ export function useAppState() {
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("mk_token");
+    localStorage.removeItem("active_household");
     setToken(null);
-    setView("recipes");
+    setView("home");
+    setNavContext("personal");
     setSelectedHouseholdId(null);
     setSelectedRecipeId(null);
     setSelectedRecipeSharedMeta(null);
@@ -54,7 +64,11 @@ export function useAppState() {
   // ── Active household context ────────────────────────────────────────────
 
   const setActiveHousehold = useCallback((household) => {
+    try {
+      localStorage.setItem("active_household", JSON.stringify(household));
+    } catch {}
     setActiveHouseholdState(household);
+    setNavContext("household");
     setSelectedRecipeId(null);
     setSelectedRecipeSharedMeta(null);
     setRecipeNavStack([]);
@@ -62,9 +76,11 @@ export function useAppState() {
   }, []);
 
   const clearActiveHousehold = useCallback(() => {
+    localStorage.removeItem("active_household");
+    setNavContext("personal");
     setActiveHouseholdState(null);
     setSelectedRecipeSharedMeta(null);
-    setView("recipes");
+    setView("home");
   }, []);
 
   // ── Household navigation ────────────────────────────────────────────────
@@ -129,7 +145,8 @@ export function useAppState() {
 
   // ── Tab switch ──────────────────────────────────────────────────────────
 
-  const switchTab = useCallback((tab) => {
+  const switchTab = useCallback((tab, context) => {
+    if (context != null) setNavContext(context);
     if (tab === "recipes") {
       setSelectedRecipeId(null);
       setSelectedRecipeSharedMeta(null);
@@ -138,8 +155,8 @@ export function useAppState() {
     } else if (tab === "households") {
       setSelectedHouseholdId(null);
       setView("households");
-    } else if (tab === "shopping") {
-      setView("shopping");
+    } else if (tab === "home") {
+      setView("home");
     } else {
       setView(tab);
     }
@@ -157,6 +174,7 @@ export function useAppState() {
     handleLogin,
     handleLogout,
     view,
+    navContext,
     switchTab,
     openSettings,
     closeSettings,

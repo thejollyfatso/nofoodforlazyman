@@ -419,6 +419,7 @@ export default function HouseholdDetailView({
     setActionError(null);
     try {
       await apiFetch(`/households/${householdId}/leave`, { method: "POST" });
+      if (activeHousehold?.id === householdId) onDeactivate();
       onBack();
     } catch (err) {
       setActionError(err.message);
@@ -430,6 +431,7 @@ export default function HouseholdDetailView({
     setActionError(null);
     try {
       await apiFetch(`/households/${householdId}`, { method: "DELETE" });
+      if (activeHousehold?.id === householdId) onDeactivate();
       onBack();
     } catch (err) {
       setActionError(err.message);
