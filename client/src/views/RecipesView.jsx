@@ -251,6 +251,23 @@ const s = {
     padding: "2px 6px",
     flexShrink: 0,
   },
+  selectAllRow: {
+    display: "flex",
+    gap: "8px",
+    padding: "8px 20px 0",
+  },
+  selectAllBtn: {
+    flex: 1,
+    background: "none",
+    border: "1.5px solid var(--color-border)",
+    borderRadius: "var(--radius-sm)",
+    padding: "8px",
+    fontSize: "14px",
+    fontWeight: "600",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    color: "#374151",
+  },
 };
 
 export default function RecipesView({
@@ -340,6 +357,20 @@ export default function RecipesView({
       // ignore
     } finally {
       setUnsharingId(null);
+    }
+  }
+
+  async function handleSelectAll() {
+    const unshared = personalRecipes.filter((r) => !sharedIds.has(r.id));
+    for (const r of unshared) {
+      await handleShare(r);
+    }
+  }
+
+  async function handleDeselectAll() {
+    const shared = personalRecipes.filter((r) => sharedIds.has(r.id));
+    for (const r of shared) {
+      await handleUnshare(r);
     }
   }
 
@@ -594,6 +625,16 @@ export default function RecipesView({
                 ×
               </button>
             </div>
+            {!pickerLoading && personalRecipes.length > 0 && (
+              <div style={s.selectAllRow}>
+                <button style={s.selectAllBtn} onClick={handleSelectAll}>
+                  Select All
+                </button>
+                <button style={{...s.selectAllBtn, color: "var(--color-danger)"}} onClick={handleDeselectAll}>
+                  Deselect All
+                </button>
+              </div>
+            )}
             <div style={s.modalBody}>
               {pickerLoading && (
                 <p style={{ color: "#6b7280", textAlign: "center" }}>
