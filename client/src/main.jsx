@@ -589,6 +589,7 @@ function App() {
     return (
       <IngredientSelectView
         recipeId={selectedRecipeId}
+        sharedMeta={selectedRecipeSharedMeta}
         onBack={backFromRecipeSubView}
         onAddToList={(recipe, ingredients) => {
           shopping.handleAddRecipe(recipe, ingredients);

@@ -130,6 +130,7 @@ const s = {
 
 export default function IngredientSelectView({
   recipeId,
+  sharedMeta,
   onBack,
   onAddToList,
 }) {
@@ -138,18 +139,20 @@ export default function IngredientSelectView({
   const [selected, setSelected] = useState(new Set());
 
   useEffect(() => {
-    apiFetch("/recipes")
+    const url = sharedMeta
+      ? `/households/${sharedMeta.household_id}/recipes`
+      : "/recipes";
+    apiFetch(url)
       .then((list) => {
         const found = list.find((r) => r.id === recipeId);
         if (!found) return onBack();
         setRecipe(found);
-        // Select all by default
         const allIdx = new Set((found.ingredients || []).map((_, i) => i));
         setSelected(allIdx);
       })
       .catch(() => onBack())
       .finally(() => setLoading(false));
-  }, [recipeId, onBack]);
+  }, [recipeId, sharedMeta, onBack]);
 
   function toggleIngredient(i) {
     setSelected((prev) => {
