@@ -35,15 +35,6 @@ const s = {
     padding: "20px 20px 0",
   },
   title: { fontSize: "22px", fontWeight: "700", margin: 0 },
-  signOut: {
-    background: "none",
-    border: "none",
-    padding: "8px 0",
-    fontSize: "14px",
-    color: "var(--color-primary)",
-    cursor: "pointer",
-    fontFamily: "inherit",
-  },
   body: {
     padding: "16px 20px",
     display: "flex",
@@ -201,11 +192,7 @@ const s = {
   },
 };
 
-export default function HouseholdsView({
-  onOpenHousehold,
-  onLogout,
-  onJoinWithToken,
-}) {
+export default function HouseholdsView({ onOpenHousehold, onJoinWithToken }) {
   const [households, setHouseholds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -293,9 +280,6 @@ export default function HouseholdsView({
     <div style={s.page}>
       <div style={s.header}>
         <h1 style={s.title}>Households</h1>
-        <button style={s.signOut} onClick={onLogout}>
-          Sign out
-        </button>
       </div>
 
       <div style={s.body}>

@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/apiFetch";
 import { normalizeIngredientName } from "../utils/normalizeIngredientName";
-import { useToast, Toast } from "../components/Toast";
 
 function levenshtein(a, b) {
   if (a === b) return 0;
@@ -42,7 +41,7 @@ const s = {
     background: "var(--color-bg)",
     display: "flex",
     flexDirection: "column",
-    paddingBottom: "60px",
+    paddingBottom: "56px",
   },
   header: {
     padding: "20px 20px 0",
@@ -137,30 +136,6 @@ const s = {
     letterSpacing: "0.06em",
     padding: "4px 0 2px",
   },
-  footer: {
-    position: "fixed",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    background: "#fff",
-    borderTop: "1px solid var(--color-border)",
-    display: "flex",
-    padding: "10px 20px",
-    gap: "12px",
-    zIndex: 10,
-  },
-  footerBtn: {
-    flex: 1,
-    padding: "10px",
-    fontSize: "15px",
-    fontWeight: "600",
-    background: "none",
-    border: "1.5px solid var(--color-border)",
-    borderRadius: "var(--radius-sm)",
-    cursor: "pointer",
-    fontFamily: "inherit",
-    color: "#374151",
-  },
 };
 
 export default function RecipesView({ onOpenRecipe, onNewRecipe }) {
@@ -168,9 +143,6 @@ export default function RecipesView({ onOpenRecipe, onNewRecipe }) {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [searchMode, setSearchMode] = useState("recipe");
-  const [importing, setImporting] = useState(false);
-  const fileInputRef = useRef(null);
-  const { toast, showToast } = useToast();
 
   useEffect(() => {
     apiFetch("/recipes")
@@ -216,150 +188,6 @@ export default function RecipesView({ onOpenRecipe, onNewRecipe }) {
     matchAll.sort((a, b) => a.title.localeCompare(b.title));
     matchAny.sort((a, b) => a.title.localeCompare(b.title));
     return { matchAll, matchAny };
-  }
-
-  // ── Export ───────────────────────────────────────────────────────────────
-
-  function handleExport() {
-    if (recipes.length === 0) {
-      showToast("No recipes to export");
-      return;
-    }
-    const data = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      app: "nf4lm",
-      recipes: recipes.map((r) => ({
-        id: r.id,
-        title: r.title,
-        notes: r.notes,
-        ingredients: r.ingredients,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-      })),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const date = new Date().toISOString().split("T")[0];
-    a.download = `nf4lm-v1-${date}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // ── Import ───────────────────────────────────────────────────────────────
-
-  async function handleImportFile(e) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-
-    let data;
-    try {
-      data = JSON.parse(await file.text());
-    } catch {
-      showToast("Invalid JSON file");
-      return;
-    }
-
-    if (!Array.isArray(data.recipes)) {
-      showToast("Invalid backup file");
-      return;
-    }
-
-    const issues = [];
-    if (!data.version) issues.push("Missing version field");
-    else if (data.version !== 1)
-      issues.push(`Unknown version: ${data.version}`);
-
-    if (!data.app || data.app !== "nf4lm")
-      issues.push(
-        `Unrecognized app: "${data.app || "(missing)"}" — format may not be compatible`
-      );
-
-    const existingTitles = new Set(
-      recipes.map((r) => r.title.trim().toLowerCase())
-    );
-    const toImport = [];
-    let skipped = 0;
-
-    for (const r of data.recipes) {
-      if (!r.title?.trim()) {
-        skipped++;
-        issues.push(`Skipping recipe with no title`);
-        continue;
-      }
-      const key = r.title.trim().toLowerCase();
-      if (existingTitles.has(key)) {
-        skipped++;
-        issues.push(`Duplicate title skipped: "${r.title.trim()}"`);
-        continue;
-      }
-      toImport.push(r);
-      existingTitles.add(key);
-    }
-
-    if (toImport.length === 0) {
-      showToast(
-        skipped > 0
-          ? `Nothing to import (${skipped} skipped)`
-          : "Nothing to import"
-      );
-      return;
-    }
-
-    if (issues.length > 0) {
-      const msg =
-        `Issues found:\n${issues.slice(0, 5).join("\n")}` +
-        (issues.length > 5 ? `\n…and ${issues.length - 5} more` : "") +
-        `\n\nImport ${toImport.length} recipe(s)?`;
-      if (!window.confirm(msg)) return;
-    }
-
-    setImporting(true);
-    let imported = 0;
-    let failed = 0;
-    const added = [];
-
-    for (const r of toImport) {
-      try {
-        const ingredients = (r.ingredients || []).map((ing) => ({
-          ...ing,
-          secret: ing.secret ?? false,
-          substitutions: (ing.substitutions || []).map((sub) =>
-            typeof sub === "string" ? { qty: "", unit: "", name: sub } : sub
-          ),
-        }));
-        const created = await apiFetch("/recipes", {
-          method: "POST",
-          body: JSON.stringify({
-            title: r.title.trim(),
-            notes: r.notes || "",
-            ingredients,
-            created_at: r.createdAt || undefined,
-          }),
-        });
-        added.push(created);
-        imported++;
-      } catch {
-        failed++;
-      }
-    }
-
-    setRecipes((prev) => {
-      const updated = [...prev, ...added];
-      updated.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      return updated;
-    });
-
-    setImporting(false);
-    const parts = [`Imported ${imported}`];
-    if (skipped > 0) parts.push(`${skipped} skipped`);
-    if (failed > 0) parts.push(`${failed} failed`);
-    showToast(parts.join(", "));
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -474,29 +302,6 @@ export default function RecipesView({ onOpenRecipe, onNewRecipe }) {
         )}
         {renderList()}
       </div>
-
-      <div style={s.footer}>
-        <button
-          style={s.footerBtn}
-          onClick={() => fileInputRef.current?.click()}
-          disabled={importing}
-        >
-          {importing ? "Importing…" : "Import"}
-        </button>
-        <button style={s.footerBtn} onClick={handleExport}>
-          Export
-        </button>
-      </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        style={{ display: "none" }}
-        onChange={handleImportFile}
-      />
-
-      <Toast message={toast} />
     </div>
   );
 }

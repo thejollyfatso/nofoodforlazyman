@@ -7,6 +7,18 @@ export function useAppState() {
   const [selectedHouseholdId, setSelectedHouseholdId] = useState(null);
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
   const [recipeNavStack, setRecipeNavStack] = useState([]);
+  const [preSettingsView, setPreSettingsView] = useState("recipes");
+
+  const openSettings = useCallback(() => {
+    setView((current) => {
+      setPreSettingsView(current);
+      return "settings";
+    });
+  }, []);
+
+  const closeSettings = useCallback(() => {
+    setView(preSettingsView);
+  }, [preSettingsView]);
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("mk_token");
@@ -79,9 +91,11 @@ export function useAppState() {
       setSelectedRecipeId(null);
       setRecipeNavStack([]);
       setView("recipes");
-    } else {
+    } else if (tab === "households") {
       setSelectedHouseholdId(null);
       setView("households");
+    } else {
+      setView(tab);
     }
   }, []);
 
@@ -97,6 +111,8 @@ export function useAppState() {
     handleLogout,
     view,
     switchTab,
+    openSettings,
+    closeSettings,
     // Households
     selectedHouseholdId,
     openHousehold,
