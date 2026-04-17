@@ -531,7 +531,15 @@ function App() {
   // Main tab views
   return (
     <>
-      {view === "home" && <HomeView />}
+      {view === "home" && (
+        <HomeView
+          shopping={shopping}
+          activeHousehold={activeHousehold}
+          onOpenRecipe={openRecipe}
+          onOpenHouseholdRecipe={openHouseholdRecipe}
+          onNavigate={switchTab}
+        />
+      )}
       {view === "recipes" && (
         <RecipesView
           onOpenRecipe={openRecipe}
