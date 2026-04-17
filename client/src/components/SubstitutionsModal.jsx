@@ -46,9 +46,16 @@ const s = {
     padding: "12px 20px",
     fontSize: "15px",
     display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    cursor: "pointer",
+  },
+  rowInfo: (interactive) => ({
+    display: "flex",
     alignItems: "baseline",
     gap: "6px",
-  },
+    flex: interactive ? 1 : undefined,
+  }),
   qty: {
     color: "var(--color-primary)",
     fontWeight: "500",
@@ -56,6 +63,24 @@ const s = {
   },
   name: {
     color: "#111",
+  },
+  checkbox: (checked) => ({
+    width: "22px",
+    height: "22px",
+    borderRadius: "50%",
+    border: checked
+      ? "2px solid var(--color-primary)"
+      : "2px solid var(--color-border)",
+    flexShrink: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: checked ? "var(--color-primary)" : "#fff",
+  }),
+  checkmark: {
+    color: "#fff",
+    fontSize: "13px",
+    fontWeight: "700",
   },
   footer: {
     padding: "14px 20px",
@@ -76,7 +101,13 @@ const s = {
   },
 };
 
-export default function SubstitutionsModal({ ingredient, onClose }) {
+export default function SubstitutionsModal({
+  ingredient,
+  onClose,
+  interactive = false,
+  onSelectSubstitution,
+  selectedSubstitutionName = null,
+}) {
   useEffect(() => {
     function onKey(e) {
       if (e.key === "Escape") onClose();
@@ -100,22 +131,38 @@ export default function SubstitutionsModal({ ingredient, onClose }) {
           {subs.map((sub, i) => {
             const qtyStr = formatQty(sub.qty);
             const unitStr = sub.unit ? ` ${sub.unit}` : "";
+            const isSelected = selectedSubstitutionName === sub.name;
             return (
-              <div key={i} style={s.row}>
-                <span style={s.qty}>
-                  {qtyStr}
-                  {unitStr}
-                </span>
-                <span style={s.name}>{sub.name}</span>
+              <div
+                key={i}
+                style={s.row}
+                onClick={
+                  interactive ? () => onSelectSubstitution?.(sub) : undefined
+                }
+              >
+                {interactive && (
+                  <div style={s.checkbox(isSelected)}>
+                    {isSelected && <span style={s.checkmark}>✓</span>}
+                  </div>
+                )}
+                <div style={s.rowInfo(interactive)}>
+                  <span style={s.qty}>
+                    {qtyStr}
+                    {unitStr}
+                  </span>
+                  <span style={s.name}>{sub.name}</span>
+                </div>
               </div>
             );
           })}
         </div>
-        <div style={s.footer}>
-          <button style={s.closeBtn} onClick={onClose}>
-            Close
-          </button>
-        </div>
+        {!interactive && (
+          <div style={s.footer}>
+            <button style={s.closeBtn} onClick={onClose}>
+              Close
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

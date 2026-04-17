@@ -91,4 +91,26 @@ def init_db():
                 obfuscate_secrets INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (household_id, recipe_id)
             );
+
+            CREATE TABLE IF NOT EXISTS shopping_list_items (
+                id               TEXT NOT NULL,
+                owner_type       TEXT NOT NULL CHECK (owner_type IN ('user', 'household')),
+                owner_id         TEXT NOT NULL,
+                name             TEXT NOT NULL,
+                normalized_name  TEXT NOT NULL,
+                quantities       TEXT NOT NULL DEFAULT '[]',
+                checked          INTEGER NOT NULL DEFAULT 0,
+                checked_by       TEXT,
+                source_recipes   TEXT NOT NULL DEFAULT '[]',
+                optional         INTEGER NOT NULL DEFAULT 0,
+                secret           INTEGER NOT NULL DEFAULT 0,
+                assigned_to      TEXT NOT NULL DEFAULT '[]',
+                substitutions    TEXT NOT NULL DEFAULT '[]',
+                substituted_with TEXT,
+                item_order       INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (owner_type, owner_id, id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_shopping_owner
+                ON shopping_list_items (owner_type, owner_id);
         """)

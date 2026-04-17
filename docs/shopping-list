@@ -1,0 +1,186 @@
+# Shopping list design — nf4lm
+
+---
+
+## Overview
+
+The shopping list is a first-class entity. Recipes contribute ingredients to
+it but do not own it. All changes are incremental — the list is never rebuilt
+from scratch.
+
+Two list contexts exist:
+- Personal: belongs to a single user
+- Household: shared by all members of a household, one per household
+
+Both follow identical behavior unless noted otherwise.
+
+---
+
+## Item structure
+
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "normalized_name": "string",
+  "quantities": [{ "qty": "string", "unit": "string" }],
+  "checked": false,
+  "checked_by": "user_id | null",
+  "source_recipes": ["recipe_id"],
+  "optional": false,
+  "secret": false,
+  "assigned_to": ["user_id"],
+  "substitutions": [{ "qty": "string", "unit": "string", "name": "string" }],
+  "substituted_with": "string | null",
+  "item_order": 0
+}
+```
+
+- `quantities` — array of qty/unit pairs. All unit entries for the same
+  ingredient are stored together in this array regardless of unit type.
+  Displayed joined with " + ".
+- `checked_by` — user_id of the member who checked the item. Null if unchecked.
+  Displayed in the household list to indicate who checked it off.
+- `source_recipes` — array of recipe IDs that contributed this item.
+  Empty array for manually added items.
+- `secret` — item is only visible to the sharing owner of the source recipe.
+  Marked with a visual symbol in the list. Hidden entirely from other members.
+- `assigned_to` — array of user IDs. Empty means unassigned. Any member can
+  assign or reassign any item — not restricted to the owner.
+- `substituted_with` — name of substitution chosen, null if none.
+
+---
+
+## Adding items
+
+### Adding a recipe
+- Each ingredient is normalized and checked against existing items
+- Match found (fuzzy, Levenshtein 1, min 4 chars for fuzzy, exact for shorter):
+  quantities merged into the quantities array, source_recipes updated,
+  substitutions union-merged
+- No match: new item created
+- Optional flag: stays true only if ALL contributing ingredients are optional
+- Range quantities: upper bound used when merging qty
+
+### Adding manually
+- Input parsed using the ingredient parser
+- Normalized and checked against existing items
+- Match: quantities merged into existing item
+- No match: new item created
+- Manual items have an empty source_recipes array
+
+### Ingredient select (partial recipe add)
+- User selects a subset of a recipe's ingredients
+- Same merge logic as full recipe add
+- Only selected ingredients contribute to source_recipes
+
+---
+
+## Removing items
+
+### Removing a recipe from the list
+- For each ingredient in the removed recipe, find the matching list item
+- Subtract the recipe's qty contribution from the quantities array
+- Remove the recipe ID from source_recipes
+- If quantities is empty and source_recipes is empty: remove item entirely
+- If the user had manually edited the qty of an affected item, show a prompt
+  with three options:
+  1. Remove the recipe's qty contribution from the item
+  2. Keep the current qty as-is
+  3. Remove the ingredient entry entirely
+
+### Removing a manually added item
+- If source_recipes is also empty: remove item entirely
+- If item also has recipe sources: subtract manual contribution, keep item
+
+### Clear Done
+- Deletes all checked items from the list entirely
+
+### Clear All
+- Deletes all items and resets all source tracking
+- Confirm dialog before proceeding
+
+---
+
+## Checking items
+
+- Any member can check or uncheck any item
+- checked_by is set to the user_id of whoever checked it, cleared on uncheck
+- In household lists, the alias of the member who checked an item is shown
+  on the item row
+- Checked items displayed below unchecked items with a visual divider
+- Checked items: reduced opacity, strikethrough on qty and name
+
+---
+
+## Qty editing
+
+- User can tap the qty of any unchecked item to edit inline
+- Edited qty is saved directly to the item
+- If the item has multiple quantity entries, editing replaces the entire
+  quantities array with the new parsed value
+
+---
+
+## Substitutions
+
+- Items with substitutions show a chevron — tapping opens a modal
+- Modal shows substitutions as interactive rows with circular checkboxes
+- Tapping a substitution: marks item checked, sets substituted_with,
+  sets checked_by, shows "Using: X" toast
+
+---
+
+## Copy bar
+
+- Two buttons: Simple copy and Copy with measurements
+- Simple copy: name only for all unchecked items
+- Copy with measurements: "qty unit name" per line for all unchecked items
+- Both copy unchecked items only
+- Toast "Nothing to copy" if all items are checked
+
+---
+
+## Item display
+
+- Unchecked items shown above checked items regardless of item_order
+- Visual divider between unchecked and checked sections
+- Each item always shows all recipe source pills — one pill per source recipe,
+  showing the recipe title. No item ever shows a "combined" label instead.
+- Item shows "using: X" if substituted_with is set
+- Item shows "optional" note if optional and not substituted
+- Secret items marked with a consistent visual symbol throughout the app
+- In household lists: checked items show the alias of the member who checked them
+- Empty state with prompt to add a recipe or item
+
+---
+
+## Normalization and merging
+
+- Normalize: lowercase, strip punctuation, collapse whitespace, strip leading
+  articles (a/an/the), singularize
+- Singularization: hardcoded irregulars + rules for -ies/-ves/-es/-s
+- Fuzzy match: Levenshtein distance 1, minimum 4 characters — shorter names
+  require exact match
+- All units for the same ingredient stored as separate entries in the
+  quantities array
+
+---
+
+## Household list specifics
+
+- Shared by all members — any member can add, remove, check, assign items
+- Any member can Clear Done or Clear All
+- Item assignment: any member can assign or reassign any item to any number
+  of members
+- Secret ingredients from shared recipes: visible only to the sharing owner,
+  marked with a visual symbol, hidden entirely from other members
+- When a shared recipe is unshared, its contributed items are removed using
+  the same recipe removal logic above
+
+---
+
+## SSE
+
+- Personal list: shopping_changed event sent to the owning user only
+- Household list: shopping_changed event sent to all household members

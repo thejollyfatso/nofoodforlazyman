@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import { useAppState } from "./state/useAppState";
+import { useShoppingList } from "./state/useShoppingList";
 import LoginView from "./views/LoginView";
 import HouseholdsView from "./views/HouseholdsView";
 import HouseholdDetailView from "./views/HouseholdDetailView";
@@ -156,6 +157,7 @@ const cogBtnStyle = {
 function App() {
   const {
     isAuthenticated,
+    token,
     handleLogin,
     handleLogout,
     view,
@@ -179,6 +181,22 @@ function App() {
     backFromRecipeSubView,
     backToRecipes,
   } = useAppState();
+
+  const [shoppingContextType, setShoppingContextType] = useState("personal");
+
+  // Derive effective context: fall back to personal if household is not active
+  const effectiveContextType =
+    shoppingContextType === "household" && activeHousehold
+      ? "household"
+      : "personal";
+
+  const shoppingOwnerId =
+    effectiveContextType === "household" ? activeHousehold.id : currentUserId;
+
+  const shopping = useShoppingList(
+    { contextType: effectiveContextType, ownerId: shoppingOwnerId },
+    token
+  );
 
   const urlJoinToken = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -252,8 +270,19 @@ function App() {
         onBack={backToRecipes}
         onEdit={openEditRecipe}
         onChooseIngredients={openIngredientSelect}
-        inShoppingList={false}
-        onToggleShoppingList={null}
+        inShoppingList={shopping.isRecipeInList(selectedRecipeId)}
+        onToggleShoppingList={(recipe) => {
+          if (shopping.isRecipeInList(recipe.id)) {
+            shopping.handleRemoveRecipe(
+              recipe.id,
+              recipe.ingredients,
+              (multiSourceItems, newItems) => shopping.writeList(newItems)
+            );
+          } else {
+            shopping.handleAddRecipe(recipe, recipe.ingredients);
+            backToRecipes();
+          }
+        }}
         sharedMeta={selectedRecipeSharedMeta}
         currentUserId={currentUserId}
       />
@@ -277,7 +306,10 @@ function App() {
       <IngredientSelectView
         recipeId={selectedRecipeId}
         onBack={backFromRecipeSubView}
-        onAddToList={null}
+        onAddToList={(recipe, ingredients) => {
+          shopping.handleAddRecipe(recipe, ingredients);
+          backToRecipes();
+        }}
       />
     );
   }
@@ -318,7 +350,15 @@ function App() {
           onActivateHousehold={setActiveHousehold}
         />
       )}
-      {view === "shopping" && <ShoppingView />}
+      {view === "shopping" && (
+        <ShoppingView
+          shopping={shopping}
+          activeHousehold={activeHousehold}
+          shoppingContextType={effectiveContextType}
+          onSwitchContext={setShoppingContextType}
+          currentUserId={currentUserId}
+        />
+      )}
       <button style={cogBtnStyle} onClick={openSettings} aria-label="Settings">
         <IconCog />
       </button>
