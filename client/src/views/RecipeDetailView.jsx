@@ -377,7 +377,7 @@ export default function RecipeDetailView({
           </button>
           <button
             style={s.chooseBtn}
-            onClick={() => onChooseIngredients?.(recipe)}
+            onClick={() => onChooseIngredients?.(recipe.id)}
           >
             Choose Ingredients
           </button>
