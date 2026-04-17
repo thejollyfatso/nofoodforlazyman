@@ -312,7 +312,7 @@ export default function RecipeEditView({
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
-  const [mode, setMode] = useState("paste");
+  const [mode, setMode] = useState(isNew ? "paste" : "manual");
   const [pasteText, setPasteText] = useState("");
   const [rows, setRows] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -328,7 +328,9 @@ export default function RecipeEditView({
       if (!r) return onBack();
       setTitle(r.title || "");
       setNotes(r.notes || "");
-      setRows((r.ingredients || []).map(ingredientToRow));
+      const ings = r.ingredients || [];
+      setRows(ings.map(ingredientToRow));
+      setPasteText(serializeIngredients(ings));
     });
   }, [recipeId, onBack]);
 
@@ -641,20 +643,6 @@ export default function RecipeEditView({
           ‹ Back
         </button>
         <p style={s.headerTitle}>{isNew ? "New Recipe" : "Edit Recipe"}</p>
-        <div style={s.headerSeg}>
-          <button
-            style={s.segBtn(mode === "paste")}
-            onClick={() => handleModeChange("paste")}
-          >
-            Paste Text
-          </button>
-          <button
-            style={s.segBtn(mode === "manual")}
-            onClick={() => handleModeChange("manual")}
-          >
-            Manual
-          </button>
-        </div>
       </div>
 
       <div style={s.body}>
@@ -682,6 +670,20 @@ export default function RecipeEditView({
 
         <div>
           <label style={s.label}>Ingredients</label>
+          <div style={s.headerSeg}>
+            <button
+              style={s.segBtn(mode === "paste")}
+              onClick={() => handleModeChange("paste")}
+            >
+              Paste Text
+            </button>
+            <button
+              style={s.segBtn(mode === "manual")}
+              onClick={() => handleModeChange("manual")}
+            >
+              Manual
+            </button>
+          </div>
           {mode === "paste" ? (
             <textarea
               style={s.pasteArea}

@@ -19,7 +19,7 @@ const s = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    padding: "14px 16px",
+    padding: "14px 48px 14px 16px",
     background: "#fff",
     borderBottom: "1px solid var(--color-border)",
     position: "sticky",
@@ -32,28 +32,6 @@ const s = {
     fontWeight: "700",
     margin: 0,
   },
-  contextToggle: {
-    display: "flex",
-    background: "#f3f4f6",
-    borderRadius: "20px",
-    padding: "2px",
-    gap: "2px",
-    flexShrink: 0,
-  },
-  contextBtn: (active) => ({
-    padding: "4px 10px",
-    fontSize: "12px",
-    fontWeight: active ? "700" : "500",
-    background: active ? "#fff" : "transparent",
-    color: active ? "var(--color-primary)" : "#6b7280",
-    border: "none",
-    borderRadius: "18px",
-    cursor: "pointer",
-    fontFamily: "inherit",
-    whiteSpace: "nowrap",
-    boxShadow: active ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
-    transition: "none",
-  }),
   clearDoneBtn: {
     padding: "6px 10px",
     fontSize: "13px",
@@ -388,7 +366,6 @@ export default function ShoppingView({
   shopping,
   activeHousehold,
   shoppingContextType,
-  onSwitchContext,
   currentUserId,
 }) {
   const {
@@ -674,23 +651,6 @@ export default function ShoppingView({
       {/* Header */}
       <div style={s.header}>
         <p style={s.headerTitle}>Shopping</p>
-
-        {activeHousehold && (
-          <div style={s.contextToggle}>
-            <button
-              style={s.contextBtn(shoppingContextType === "personal")}
-              onClick={() => onSwitchContext("personal")}
-            >
-              Personal
-            </button>
-            <button
-              style={s.contextBtn(shoppingContextType === "household")}
-              onClick={() => onSwitchContext("household")}
-            >
-              {activeHousehold.name}
-            </button>
-          </div>
-        )}
 
         {hasDoneItems && (
           <button style={s.clearDoneBtn} onClick={handleClearDone}>

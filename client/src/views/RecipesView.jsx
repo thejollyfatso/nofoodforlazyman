@@ -499,22 +499,6 @@ export default function RecipesView({
       <div style={s.header}>
         <div style={s.titleRow}>
           <p style={s.title}>{title}</p>
-          {activeHousehold && (
-            <div style={{ marginLeft: "auto", ...s.segmented }}>
-              <button
-                style={s.segBtn(groupView)}
-                onClick={() => setGroupView(true)}
-              >
-                Grouped
-              </button>
-              <button
-                style={s.segBtn(!groupView)}
-                onClick={() => setGroupView(false)}
-              >
-                Mixed
-              </button>
-            </div>
-          )}
         </div>
         <div style={s.searchRow}>
           <input
@@ -557,6 +541,22 @@ export default function RecipesView({
               </button>
             )}
           </>
+        )}
+        {activeHousehold && (
+          <div style={s.segmented}>
+            <button
+              style={s.segBtn(groupView)}
+              onClick={() => setGroupView(true)}
+            >
+              Grouped
+            </button>
+            <button
+              style={s.segBtn(!groupView)}
+              onClick={() => setGroupView(false)}
+            >
+              Mixed
+            </button>
+          </div>
         )}
         {renderList()}
       </div>

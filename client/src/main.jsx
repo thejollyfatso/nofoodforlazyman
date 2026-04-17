@@ -552,7 +552,6 @@ function App() {
           shopping={shopping}
           activeHousehold={navContext === "household" ? activeHousehold : null}
           shoppingContextType={effectiveContextType}
-          onSwitchContext={(type) => switchTab("shopping", type)}
           currentUserId={currentUserId}
         />
       )}
