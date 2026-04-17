@@ -275,6 +275,11 @@ export default function RecipesView({ onOpenRecipe, onNewRecipe }) {
     else if (data.version !== 1)
       issues.push(`Unknown version: ${data.version}`);
 
+    if (!data.app || data.app !== "nf4lm")
+      issues.push(
+        `Unrecognized app: "${data.app || "(missing)"}" — format may not be compatible`
+      );
+
     const existingTitles = new Set(
       recipes.map((r) => r.title.trim().toLowerCase())
     );
@@ -321,12 +326,19 @@ export default function RecipesView({ onOpenRecipe, onNewRecipe }) {
 
     for (const r of toImport) {
       try {
+        const ingredients = (r.ingredients || []).map((ing) => ({
+          ...ing,
+          secret: ing.secret ?? false,
+          substitutions: (ing.substitutions || []).map((sub) =>
+            typeof sub === "string" ? { qty: "", unit: "", name: sub } : sub
+          ),
+        }));
         const created = await apiFetch("/recipes", {
           method: "POST",
           body: JSON.stringify({
             title: r.title.trim(),
             notes: r.notes || "",
-            ingredients: r.ingredients || [],
+            ingredients,
             created_at: r.createdAt || undefined,
           }),
         });
