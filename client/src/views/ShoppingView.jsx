@@ -434,6 +434,7 @@ export default function ShoppingView({
   const [editingQtyId, setEditingQtyId] = useState(null);
   const [editingQtyVal, setEditingQtyVal] = useState("");
   const [removePrompt, setRemovePrompt] = useState(null);
+  const [confirmRemove, setConfirmRemove] = useState(null);
   const { toast, showToast } = useToast();
 
   function getMemberAlias(userId) {
@@ -614,11 +615,11 @@ export default function ShoppingView({
                     key={rid}
                     style={s.recipePill}
                     onClick={() =>
-                      handleRemoveRecipe(
-                        rid,
-                        recipe?.ingredients || [],
-                        onNeedPrompt
-                      )
+                      setConfirmRemove({
+                        recipeId: rid,
+                        recipeTitle: recipe?.title || "recipe",
+                        recipeIngredients: recipe?.ingredients || [],
+                      })
                     }
                     aria-label={`Remove ${recipe?.title || "recipe"} from list`}
                   >
@@ -799,6 +800,39 @@ export default function ShoppingView({
           onSelectSubstitution={(sub) => handleSubSelect(subModalItem, sub)}
           selectedSubstitutionName={subModalItem.substituted_with}
         />
+      )}
+
+      {/* Recipe removal confirmation */}
+      {confirmRemove && (
+        <div style={s.promptBackdrop} onClick={() => setConfirmRemove(null)}>
+          <div style={s.promptSheet} onClick={(e) => e.stopPropagation()}>
+            <p style={s.promptTitle}>
+              Remove &ldquo;{confirmRemove.recipeTitle}&rdquo;?
+            </p>
+            <p style={s.promptSubtitle}>
+              This will remove all ingredients from this recipe from your list.
+            </p>
+            <button
+              style={s.promptBtn(true)}
+              onClick={() => {
+                handleRemoveRecipe(
+                  confirmRemove.recipeId,
+                  confirmRemove.recipeIngredients,
+                  onNeedPrompt
+                );
+                setConfirmRemove(null);
+              }}
+            >
+              Remove from list
+            </button>
+            <button
+              style={s.promptCancelBtn}
+              onClick={() => setConfirmRemove(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Recipe removal prompt */}

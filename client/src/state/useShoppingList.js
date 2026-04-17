@@ -263,17 +263,17 @@ export function removeRecipeFromList(items, recipeId, recipeIngredients) {
       continue;
     }
 
-    // Multiple sources → queue for prompt, keep in list for now
-    if (!promptedIds.has(item.id)) {
-      promptedIds.add(item.id);
-      multiSourceItems.push({
-        item: { ...item },
-        recipeId,
-        recipeQty: matchingIng?.qty || "",
-        recipeUnit: matchingIng?.unit || "",
-      });
-    }
-    newItems.push({ ...item, source_recipes: remaining });
+    // Multiple sources, no manual additions → auto-subtract contribution
+    const afterSubtract = subtractQty(
+      item.quantities,
+      matchingIng?.qty || "",
+      matchingIng?.unit || ""
+    );
+    newItems.push({
+      ...item,
+      source_recipes: remaining,
+      quantities: afterSubtract,
+    });
   }
 
   return { newItems, multiSourceItems };
