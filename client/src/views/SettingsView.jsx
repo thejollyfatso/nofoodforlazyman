@@ -82,6 +82,7 @@ const s = {
 export default function SettingsView({ onBack, onLogout }) {
   const [recipes, setRecipes] = useState([]);
   const [importing, setImporting] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const fileInputRef = useRef(null);
   const { toast, showToast } = useToast();
 
@@ -119,6 +120,37 @@ export default function SettingsView({ onBack, onLogout }) {
     a.download = `nf4lm-v1-${date}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function handleClearRecipes() {
+    if (recipes.length === 0) {
+      showToast("No recipes to clear");
+      return;
+    }
+    if (
+      !window.confirm(
+        `Delete all ${recipes.length} recipe${recipes.length === 1 ? "" : "s"}? This cannot be undone.`
+      )
+    )
+      return;
+    setClearing(true);
+    let failed = 0;
+    for (const r of recipes) {
+      try {
+        await apiFetch(`/recipes/${r.id}`, { method: "DELETE" });
+      } catch {
+        failed++;
+      }
+    }
+    if (failed === 0) {
+      setRecipes([]);
+      showToast("All recipes cleared");
+    } else {
+      const removed = recipes.length - failed;
+      setRecipes((prev) => prev.slice(removed));
+      showToast(`Cleared ${removed}, ${failed} failed`);
+    }
+    setClearing(false);
   }
 
   async function handleImportFile(e) {
@@ -253,6 +285,13 @@ export default function SettingsView({ onBack, onLogout }) {
             </button>
             <button style={s.row(false)} onClick={handleExport}>
               Export recipes
+            </button>
+            <button
+              style={s.row(true)}
+              onClick={handleClearRecipes}
+              disabled={clearing}
+            >
+              {clearing ? "Clearing…" : "Clear all recipes"}
             </button>
           </div>
         </div>

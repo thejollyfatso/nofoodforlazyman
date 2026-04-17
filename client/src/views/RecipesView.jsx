@@ -224,14 +224,14 @@ const s = {
     cursor: "pointer",
   },
   pickerCardShared: {
-    background: "#f3f4f6",
-    border: "1.5px solid var(--color-border)",
+    background: "#f0fdf4",
+    border: "1.5px solid var(--color-in-list)",
     borderRadius: "var(--radius-md)",
     padding: "12px 14px",
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    opacity: 0.55,
+    cursor: "pointer",
   },
   pickerTitle: {
     flex: 1,
@@ -270,6 +270,7 @@ export default function RecipesView({
   const [personalRecipes, setPersonalRecipes] = useState([]);
   const [pickerLoading, setPickerLoading] = useState(false);
   const [sharingId, setSharingId] = useState(null);
+  const [unsharingId, setUnsharingId] = useState(null);
   const [sharedIds, setSharedIds] = useState(new Set());
 
   function fetchRecipes() {
@@ -319,6 +320,26 @@ export default function RecipesView({
       // ignore
     } finally {
       setSharingId(null);
+    }
+  }
+
+  async function handleUnshare(recipe) {
+    if (!sharedIds.has(recipe.id)) return;
+    setUnsharingId(recipe.id);
+    try {
+      await apiFetch(`/households/${activeHousehold.id}/recipes/${recipe.id}`, {
+        method: "DELETE",
+      });
+      setSharedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(recipe.id);
+        return next;
+      });
+      fetchRecipes();
+    } catch {
+      // ignore
+    } finally {
+      setUnsharingId(null);
     }
   }
 
@@ -596,15 +617,22 @@ export default function RecipesView({
                         style={
                           alreadyShared ? s.pickerCardShared : s.pickerCard
                         }
-                        onClick={() => !alreadyShared && handleShare(r)}
+                        onClick={() =>
+                          alreadyShared ? handleUnshare(r) : handleShare(r)
+                        }
                       >
                         <p style={s.pickerTitle}>{r.title}</p>
-                        {alreadyShared && (
-                          <span style={s.sharedBadge}>Shared</span>
+                        {alreadyShared && unsharingId !== r.id && (
+                          <span style={s.sharedBadge}>Shared ×</span>
                         )}
                         {isSharing && (
                           <span style={{ fontSize: "13px", color: "#6b7280" }}>
                             Sharing…
+                          </span>
+                        )}
+                        {unsharingId === r.id && (
+                          <span style={{ fontSize: "13px", color: "#6b7280" }}>
+                            Removing…
                           </span>
                         )}
                       </div>
