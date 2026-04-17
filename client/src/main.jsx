@@ -297,7 +297,18 @@ function NavBar({
         />
       )}
 
-      <div style={barStyle}>
+      <div style={{ ...barStyle, position: "fixed" }}>
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: activeHousehold ? "50%" : 0,
+            width: "50%",
+            height: "2px",
+            background: "var(--color-primary)",
+            opacity: 0.5,
+          }}
+        />
         {/* Personal (left) */}
         <div
           style={{
