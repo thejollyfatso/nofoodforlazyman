@@ -68,6 +68,13 @@ const styles = {
     borderRadius: "var(--radius-sm)",
     padding: "10px 14px",
   },
+  inviteBanner: {
+    fontSize: "14px",
+    color: "var(--color-primary-dark)",
+    background: "var(--color-primary-light)",
+    borderRadius: "var(--radius-sm)",
+    padding: "10px 14px",
+  },
   backButton: {
     background: "none",
     border: "none",
@@ -81,7 +88,7 @@ const styles = {
   },
 };
 
-export default function LoginView({ onLogin }) {
+export default function LoginView({ onLogin, joinPreview }) {
   const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -162,6 +169,15 @@ export default function LoginView({ onLogin }) {
               : `Check ${email} for your code`}
           </p>
         </div>
+
+        {joinPreview && (
+          <div style={styles.inviteBanner}>
+            You&apos;ve been invited to join{" "}
+            <strong>{joinPreview.household_name}</strong>. Sign in to accept, or
+            paste the link in the app if you&apos;re already signed in on
+            another device.
+          </div>
+        )}
 
         {error && <div style={styles.error}>{error}</div>}
 
