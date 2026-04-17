@@ -15,7 +15,15 @@ function decodeTokenUserId(token) {
 export function useAppState() {
   const [token, setToken] = useState(() => localStorage.getItem("mk_token"));
   const [view, setView] = useState("home");
-  const [navContext, setNavContext] = useState("personal");
+  const [navContext, setNavContext] = useState(() => {
+    try {
+      return localStorage.getItem("active_household")
+        ? "household"
+        : "personal";
+    } catch {
+      return "personal";
+    }
+  });
   const [selectedHouseholdId, setSelectedHouseholdId] = useState(null);
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
   const [selectedRecipeSharedMeta, setSelectedRecipeSharedMeta] =
