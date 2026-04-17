@@ -82,4 +82,13 @@ def init_db():
                 copied_from_user_id TEXT,
                 copied_from_alias   TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS household_recipes (
+                household_id      TEXT NOT NULL REFERENCES households(id),
+                recipe_id         TEXT NOT NULL REFERENCES recipes(id),
+                shared_by_user_id TEXT NOT NULL REFERENCES users(id),
+                shared_at         TEXT NOT NULL,
+                obfuscate_secrets INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (household_id, recipe_id)
+            );
         """)

@@ -1,3 +1,4 @@
+import json
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -40,6 +41,10 @@ class UpdateMemberBody(BaseModel):
 
 class TransferOwnershipBody(BaseModel):
     user_id: str
+
+
+class ObfuscateBody(BaseModel):
+    obfuscate_secrets: bool
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -257,6 +262,7 @@ def edit_household(household_id: str, body: EditHouseholdBody, current_user: Cur
 def delete_household(household_id: str, current_user: CurrentUserDep):
     with get_db() as conn:
         _require_role(conn, household_id, current_user.id, "owner")
+        conn.execute("DELETE FROM household_recipes WHERE household_id=?", (household_id,))
         conn.execute("DELETE FROM household_invites WHERE household_id=?", (household_id,))
         conn.execute("DELETE FROM household_members WHERE household_id=?", (household_id,))
         conn.execute("DELETE FROM households WHERE id=?", (household_id,))
@@ -288,6 +294,10 @@ def leave_household(household_id: str, current_user: CurrentUserDep):
             raise HTTPException(
                 status_code=400, detail="Owner cannot leave; transfer ownership first"
             )
+        conn.execute(
+            "DELETE FROM household_recipes WHERE household_id=? AND shared_by_user_id=?",
+            (household_id, current_user.id),
+        )
         conn.execute(
             "DELETE FROM household_members WHERE household_id=? AND user_id=?",
             (household_id, current_user.id),
@@ -331,10 +341,46 @@ def remove_member(household_id: str, user_id: str, current_user: CurrentUserDep)
         if not target:
             raise HTTPException(status_code=404, detail="Member not found")
         conn.execute(
+            "DELETE FROM household_recipes WHERE household_id=? AND shared_by_user_id=?",
+            (household_id, user_id),
+        )
+        conn.execute(
             "DELETE FROM household_members WHERE household_id=? AND user_id=?",
             (household_id, user_id),
         )
     return None
+
+
+def _household_recipe_row(row, sharer_row) -> dict:
+    ingredients = json.loads(row["ingredients"])
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "notes": row["notes"],
+        "ingredients": ingredients,
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
+        "copied_from_user_id": row["copied_from_user_id"],
+        "copied_from_alias": row["copied_from_alias"],
+        "shared_by": {
+            "user_id": sharer_row["user_id"],
+            "alias": sharer_row["alias"],
+            "avatar_letter": sharer_row["avatar_letter"],
+            "avatar_color": sharer_row["avatar_color"],
+        },
+        "obfuscate_secrets": bool(row["obfuscate_secrets"]),
+    }
+
+
+def _apply_obfuscation(recipe_dict: dict, current_user_id: str) -> dict:
+    if not recipe_dict["obfuscate_secrets"]:
+        return recipe_dict
+    if recipe_dict["shared_by"]["user_id"] == current_user_id:
+        return recipe_dict
+    recipe_dict["ingredients"] = [
+        ing for ing in recipe_dict["ingredients"] if not ing.get("secret")
+    ]
+    return recipe_dict
 
 
 @router.post("/{household_id}/transfer")
@@ -360,3 +406,138 @@ def transfer_ownership(
             (household_id, body.user_id),
         )
     return _household_detail(household_id, current_user.id)
+
+
+# ── Household recipe sharing ──────────────────────────────────────────────────
+
+@router.get("/{household_id}/recipes")
+def list_household_recipes(household_id: str, current_user: CurrentUserDep):
+    with get_db() as conn:
+        _require_member(conn, household_id, current_user.id)
+        rows = conn.execute(
+            """SELECT r.*, hr.shared_by_user_id, hr.obfuscate_secrets,
+                      hm.alias, hm.avatar_letter, hm.avatar_color
+               FROM household_recipes hr
+               JOIN recipes r ON hr.recipe_id = r.id
+               JOIN household_members hm
+                 ON hm.household_id = hr.household_id AND hm.user_id = hr.shared_by_user_id
+               WHERE hr.household_id = ?
+               ORDER BY hr.shared_at ASC""",
+            (household_id,),
+        ).fetchall()
+
+    result = []
+    for row in rows:
+        sharer = {
+            "user_id": row["shared_by_user_id"],
+            "alias": row["alias"],
+            "avatar_letter": row["avatar_letter"],
+            "avatar_color": row["avatar_color"],
+        }
+        d = _household_recipe_row(row, sharer)
+        d = _apply_obfuscation(d, current_user.id)
+        result.append(d)
+    return result
+
+
+@router.post("/{household_id}/recipes/{recipe_id}", status_code=201)
+def share_recipe(household_id: str, recipe_id: str, current_user: CurrentUserDep):
+    with get_db() as conn:
+        _require_member(conn, household_id, current_user.id)
+
+        recipe = conn.execute(
+            "SELECT * FROM recipes WHERE id=? AND user_id=?",
+            (recipe_id, current_user.id),
+        ).fetchone()
+        if not recipe:
+            raise HTTPException(status_code=403, detail="Recipe not found or not yours")
+
+        existing = conn.execute(
+            "SELECT 1 FROM household_recipes WHERE household_id=? AND recipe_id=?",
+            (household_id, recipe_id),
+        ).fetchone()
+        if existing:
+            raise HTTPException(status_code=400, detail="Recipe already shared in this household")
+
+        now = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            """INSERT INTO household_recipes
+               (household_id, recipe_id, shared_by_user_id, shared_at, obfuscate_secrets)
+               VALUES (?,?,?,?,0)""",
+            (household_id, recipe_id, current_user.id, now),
+        )
+        full_row = conn.execute(
+            """SELECT r.*, hr.shared_by_user_id, hr.obfuscate_secrets,
+                      hm.alias, hm.avatar_letter, hm.avatar_color
+               FROM household_recipes hr
+               JOIN recipes r ON hr.recipe_id = r.id
+               JOIN household_members hm
+                 ON hm.household_id = hr.household_id AND hm.user_id = hr.shared_by_user_id
+               WHERE hr.household_id=? AND hr.recipe_id=?""",
+            (household_id, recipe_id),
+        ).fetchone()
+
+    sharer = {
+        "user_id": full_row["shared_by_user_id"],
+        "alias": full_row["alias"],
+        "avatar_letter": full_row["avatar_letter"],
+        "avatar_color": full_row["avatar_color"],
+    }
+    return _household_recipe_row(full_row, sharer)
+
+
+@router.delete("/{household_id}/recipes/{recipe_id}", status_code=204)
+def unshare_recipe(household_id: str, recipe_id: str, current_user: CurrentUserDep):
+    with get_db() as conn:
+        _require_member(conn, household_id, current_user.id)
+        row = conn.execute(
+            "SELECT shared_by_user_id FROM household_recipes WHERE household_id=? AND recipe_id=?",
+            (household_id, recipe_id),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Shared recipe not found")
+        if row["shared_by_user_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="Only the sharer can unshare")
+        conn.execute(
+            "DELETE FROM household_recipes WHERE household_id=? AND recipe_id=?",
+            (household_id, recipe_id),
+        )
+    return None
+
+
+@router.patch("/{household_id}/recipes/{recipe_id}")
+def update_household_recipe(
+    household_id: str, recipe_id: str, body: ObfuscateBody, current_user: CurrentUserDep
+):
+    with get_db() as conn:
+        _require_member(conn, household_id, current_user.id)
+        row = conn.execute(
+            "SELECT shared_by_user_id FROM household_recipes WHERE household_id=? AND recipe_id=?",
+            (household_id, recipe_id),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Shared recipe not found")
+        if row["shared_by_user_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="Only the sharer can update this setting")
+        conn.execute(
+            "UPDATE household_recipes SET obfuscate_secrets=? WHERE household_id=? AND recipe_id=?",
+            (1 if body.obfuscate_secrets else 0, household_id, recipe_id),
+        )
+        updated_row = conn.execute(
+            """SELECT r.*, hr.shared_by_user_id, hr.obfuscate_secrets,
+                      hm.alias, hm.avatar_letter, hm.avatar_color
+               FROM household_recipes hr
+               JOIN recipes r ON hr.recipe_id = r.id
+               JOIN household_members hm
+                 ON hm.household_id = hr.household_id AND hm.user_id = hr.shared_by_user_id
+               WHERE hr.household_id=? AND hr.recipe_id=?""",
+            (household_id, recipe_id),
+        ).fetchone()
+
+    sharer = {
+        "user_id": updated_row["shared_by_user_id"],
+        "alias": updated_row["alias"],
+        "avatar_letter": updated_row["avatar_letter"],
+        "avatar_color": updated_row["avatar_color"],
+    }
+    return _household_recipe_row(updated_row, sharer)

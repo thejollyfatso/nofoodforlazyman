@@ -168,6 +168,9 @@ def delete_recipe(recipe_id: str, current_user: CurrentUserDep):
         if not existing:
             raise HTTPException(status_code=404, detail="Recipe not found")
         conn.execute(
+            "DELETE FROM household_recipes WHERE recipe_id=?", (recipe_id,)
+        )
+        conn.execute(
             "DELETE FROM recipes WHERE id=? AND user_id=?",
             (recipe_id, current_user.id),
         )

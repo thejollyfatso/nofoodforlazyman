@@ -23,6 +23,7 @@ function ingredientToRow(ing) {
     unit: ing.unit || "",
     name: ing.name || "",
     optional: !!ing.optional,
+    secret: !!ing.secret,
     rangeQty: range ? ing.qty || "" : "",
     subs: (ing.substitutions || []).map((s) => ({
       _id: uid(),
@@ -30,7 +31,8 @@ function ingredientToRow(ing) {
       unit: s.unit || "",
       name: s.name || "",
     })),
-    expanded: !!ing.optional || !!ing.substitutions?.length || range,
+    expanded:
+      !!ing.optional || !!ing.secret || !!ing.substitutions?.length || range,
   };
 }
 
@@ -42,6 +44,7 @@ function rowToIngredient(row) {
     name: row.name.trim(),
   };
   if (row.optional) ing.optional = true;
+  if (row.secret) ing.secret = true;
   const subs = row.subs
     .filter((s) => s.name.trim())
     .map((s) => ({
@@ -303,6 +306,7 @@ export default function RecipeEditView({
   onBack,
   onSaved,
   onDeleted,
+  activeHouseholdId,
 }) {
   const isNew = !recipeId;
 
@@ -378,6 +382,7 @@ export default function RecipeEditView({
       unit: "",
       name: "",
       optional: false,
+      secret: false,
       rangeQty: "",
       subs: [],
       expanded: false,
@@ -447,10 +452,22 @@ export default function RecipeEditView({
     setSaving(true);
     try {
       if (isNew) {
-        await apiFetch("/recipes", {
+        const created = await apiFetch("/recipes", {
           method: "POST",
           body: JSON.stringify({ title: t, notes, ingredients }),
         });
+        if (activeHouseholdId) {
+          try {
+            await apiFetch(
+              `/households/${activeHouseholdId}/recipes/${created.id}`,
+              {
+                method: "POST",
+              }
+            );
+          } catch {
+            showToast("Recipe saved but couldn't auto-share to household");
+          }
+        }
       } else {
         await apiFetch(`/recipes/${recipeId}`, {
           method: "PATCH",
@@ -530,6 +547,18 @@ export default function RecipeEditView({
                 }
               />
               Optional
+            </label>
+
+            <label style={s.optionalRow}>
+              <input
+                type="checkbox"
+                style={s.checkbox}
+                checked={row.secret}
+                onChange={(e) =>
+                  updateRow(row._id, { secret: e.target.checked })
+                }
+              />
+              Secret
             </label>
 
             <div>

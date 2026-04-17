@@ -169,7 +169,10 @@ function App() {
     openHousehold,
     closeHousehold,
     selectedRecipeId,
+    selectedRecipeSharedMeta,
+    currentUserId,
     openRecipe,
+    openHouseholdRecipe,
     openNewRecipe,
     openEditRecipe,
     openIngredientSelect,
@@ -251,6 +254,8 @@ function App() {
         onChooseIngredients={openIngredientSelect}
         inShoppingList={false}
         onToggleShoppingList={null}
+        sharedMeta={selectedRecipeSharedMeta}
+        currentUserId={currentUserId}
       />
     );
   }
@@ -262,6 +267,7 @@ function App() {
         onBack={selectedRecipeId ? backFromRecipeSubView : backToRecipes}
         onSaved={backToRecipes}
         onDeleted={backToRecipes}
+        activeHouseholdId={activeHousehold?.id ?? null}
       />
     );
   }
@@ -298,7 +304,12 @@ function App() {
   return (
     <>
       {view === "recipes" && (
-        <RecipesView onOpenRecipe={openRecipe} onNewRecipe={openNewRecipe} />
+        <RecipesView
+          onOpenRecipe={openRecipe}
+          onNewRecipe={openNewRecipe}
+          activeHousehold={activeHousehold}
+          onOpenHouseholdRecipe={openHouseholdRecipe}
+        />
       )}
       {view === "households" && (
         <HouseholdsView

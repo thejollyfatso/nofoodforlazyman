@@ -1,14 +1,29 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { setUnauthorizedHandler } from "../utils/apiFetch";
+
+function decodeTokenUserId(token) {
+  if (!token) return null;
+  try {
+    const payload = token.split(".")[1];
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(json).sub ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export function useAppState() {
   const [token, setToken] = useState(() => localStorage.getItem("mk_token"));
   const [view, setView] = useState("recipes");
   const [selectedHouseholdId, setSelectedHouseholdId] = useState(null);
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
+  const [selectedRecipeSharedMeta, setSelectedRecipeSharedMeta] =
+    useState(null);
   const [recipeNavStack, setRecipeNavStack] = useState([]);
   const [preSettingsView, setPreSettingsView] = useState("recipes");
   const [activeHousehold, setActiveHouseholdState] = useState(null);
+
+  const currentUserId = useMemo(() => decodeTokenUserId(token), [token]);
 
   const openSettings = useCallback(() => {
     setView((current) => {
@@ -27,6 +42,7 @@ export function useAppState() {
     setView("recipes");
     setSelectedHouseholdId(null);
     setSelectedRecipeId(null);
+    setSelectedRecipeSharedMeta(null);
     setRecipeNavStack([]);
     setActiveHouseholdState(null);
   }, []);
@@ -40,12 +56,14 @@ export function useAppState() {
   const setActiveHousehold = useCallback((household) => {
     setActiveHouseholdState(household);
     setSelectedRecipeId(null);
+    setSelectedRecipeSharedMeta(null);
     setRecipeNavStack([]);
     setView("recipes");
   }, []);
 
   const clearActiveHousehold = useCallback(() => {
     setActiveHouseholdState(null);
+    setSelectedRecipeSharedMeta(null);
     setView("recipes");
   }, []);
 
@@ -65,11 +83,19 @@ export function useAppState() {
 
   const openRecipe = useCallback((id) => {
     setSelectedRecipeId(id);
+    setSelectedRecipeSharedMeta(null);
+    setView("recipe_detail");
+  }, []);
+
+  const openHouseholdRecipe = useCallback((id, sharedMeta) => {
+    setSelectedRecipeId(id);
+    setSelectedRecipeSharedMeta(sharedMeta);
     setView("recipe_detail");
   }, []);
 
   const openNewRecipe = useCallback(() => {
     setSelectedRecipeId(null);
+    setSelectedRecipeSharedMeta(null);
     setView("recipe_edit");
   }, []);
 
@@ -96,6 +122,7 @@ export function useAppState() {
 
   const backToRecipes = useCallback(() => {
     setSelectedRecipeId(null);
+    setSelectedRecipeSharedMeta(null);
     setRecipeNavStack([]);
     setView("recipes");
   }, []);
@@ -105,6 +132,7 @@ export function useAppState() {
   const switchTab = useCallback((tab) => {
     if (tab === "recipes") {
       setSelectedRecipeId(null);
+      setSelectedRecipeSharedMeta(null);
       setRecipeNavStack([]);
       setView("recipes");
     } else if (tab === "households") {
@@ -125,6 +153,7 @@ export function useAppState() {
   return {
     token,
     isAuthenticated: !!token,
+    currentUserId,
     handleLogin,
     handleLogout,
     view,
@@ -141,7 +170,9 @@ export function useAppState() {
     closeHousehold,
     // Recipes
     selectedRecipeId,
+    selectedRecipeSharedMeta,
     openRecipe,
+    openHouseholdRecipe,
     openNewRecipe,
     openEditRecipe,
     openIngredientSelect,
