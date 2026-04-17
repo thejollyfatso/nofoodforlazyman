@@ -8,6 +8,7 @@ export function useAppState() {
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
   const [recipeNavStack, setRecipeNavStack] = useState([]);
   const [preSettingsView, setPreSettingsView] = useState("recipes");
+  const [activeHousehold, setActiveHouseholdState] = useState(null);
 
   const openSettings = useCallback(() => {
     setView((current) => {
@@ -27,10 +28,25 @@ export function useAppState() {
     setSelectedHouseholdId(null);
     setSelectedRecipeId(null);
     setRecipeNavStack([]);
+    setActiveHouseholdState(null);
   }, []);
 
   const handleLogin = useCallback((newToken) => {
     setToken(newToken);
+  }, []);
+
+  // ── Active household context ────────────────────────────────────────────
+
+  const setActiveHousehold = useCallback((household) => {
+    setActiveHouseholdState(household);
+    setSelectedRecipeId(null);
+    setRecipeNavStack([]);
+    setView("recipes");
+  }, []);
+
+  const clearActiveHousehold = useCallback(() => {
+    setActiveHouseholdState(null);
+    setView("recipes");
   }, []);
 
   // ── Household navigation ────────────────────────────────────────────────
@@ -94,6 +110,8 @@ export function useAppState() {
     } else if (tab === "households") {
       setSelectedHouseholdId(null);
       setView("households");
+    } else if (tab === "shopping") {
+      setView("shopping");
     } else {
       setView(tab);
     }
@@ -113,6 +131,10 @@ export function useAppState() {
     switchTab,
     openSettings,
     closeSettings,
+    // Active household context
+    activeHousehold,
+    setActiveHousehold,
+    clearActiveHousehold,
     // Households
     selectedHouseholdId,
     openHousehold,

@@ -11,10 +11,11 @@ import RecipeDetailView from "./views/RecipeDetailView";
 import RecipeEditView from "./views/RecipeEditView";
 import IngredientSelectView from "./views/IngredientSelectView";
 import SettingsView from "./views/SettingsView";
+import ShoppingView from "./views/ShoppingView";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
-const TAB_BAR_VIEWS = new Set(["recipes", "households"]);
+const TAB_BAR_VIEWS = new Set(["recipes", "households", "shopping"]);
 
 const tabBarStyle = {
   position: "fixed",
@@ -53,9 +54,15 @@ const IconRecipes = () => (
   </svg>
 );
 
-const IconGroup = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+const IconGroup = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
     <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+  </svg>
+);
+
+const IconCart = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.1 17 7 17h11v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H18c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 22.46 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
   </svg>
 );
 
@@ -65,7 +72,12 @@ const IconCog = () => (
   </svg>
 );
 
-function TabBar({ activeTab, onSwitch }) {
+function TabBar({
+  activeTab,
+  onSwitch,
+  activeHousehold,
+  onOpenActiveHousehold,
+}) {
   return (
     <div style={tabBarStyle}>
       <button
@@ -75,12 +87,54 @@ function TabBar({ activeTab, onSwitch }) {
         <IconRecipes />
         Recipes
       </button>
-      <button
-        style={tabBtnStyle(activeTab === "households")}
-        onClick={() => onSwitch("households")}
+
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
-        <IconGroup />
-        Households
+        {activeHousehold ? (
+          <button
+            onClick={onOpenActiveHousehold}
+            style={{
+              background: "var(--color-primary-light)",
+              border: "2px solid var(--color-primary)",
+              borderRadius: "20px",
+              color: "var(--color-primary)",
+              fontWeight: 700,
+              fontSize: "12px",
+              padding: "5px 14px",
+              width: "calc(100% - 12px)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              lineHeight: 1.3,
+            }}
+          >
+            {activeHousehold.name}
+          </button>
+        ) : (
+          <button
+            style={tabBtnStyle(activeTab === "households")}
+            onClick={() => onSwitch("households")}
+          >
+            <IconGroup />
+            Households
+          </button>
+        )}
+      </div>
+
+      <button
+        style={tabBtnStyle(activeTab === "shopping")}
+        onClick={() => onSwitch("shopping")}
+      >
+        <IconCart />
+        Shopping
       </button>
     </div>
   );
@@ -108,6 +162,9 @@ function App() {
     switchTab,
     openSettings,
     closeSettings,
+    activeHousehold,
+    setActiveHousehold,
+    clearActiveHousehold,
     selectedHouseholdId,
     openHousehold,
     closeHousehold,
@@ -225,6 +282,9 @@ function App() {
       <HouseholdDetailView
         householdId={selectedHouseholdId}
         onBack={closeHousehold}
+        activeHousehold={activeHousehold}
+        onActivate={setActiveHousehold}
+        onDeactivate={clearActiveHousehold}
       />
     );
   }
@@ -244,12 +304,19 @@ function App() {
         <HouseholdsView
           onOpenHousehold={openHousehold}
           onJoinWithToken={handleJoinWithToken}
+          onActivateHousehold={setActiveHousehold}
         />
       )}
+      {view === "shopping" && <ShoppingView />}
       <button style={cogBtnStyle} onClick={openSettings} aria-label="Settings">
         <IconCog />
       </button>
-      <TabBar activeTab={view} onSwitch={switchTab} />
+      <TabBar
+        activeTab={view}
+        onSwitch={switchTab}
+        activeHousehold={activeHousehold}
+        onOpenActiveHousehold={() => openHousehold(activeHousehold.id)}
+      />
     </>
   );
 }

@@ -192,7 +192,11 @@ const s = {
   },
 };
 
-export default function HouseholdsView({ onOpenHousehold, onJoinWithToken }) {
+export default function HouseholdsView({
+  onOpenHousehold,
+  onJoinWithToken,
+  onActivateHousehold,
+}) {
   const [households, setHouseholds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -428,7 +432,11 @@ export default function HouseholdsView({ onOpenHousehold, onJoinWithToken }) {
         )}
 
         {households.map((h) => (
-          <div key={h.id} style={s.card} onClick={() => onOpenHousehold(h.id)}>
+          <div
+            key={h.id}
+            style={s.card}
+            onClick={() => onActivateHousehold({ id: h.id, name: h.name })}
+          >
             <Avatar
               letter={
                 h.avatar_letter || (h.alias ? h.alias[0].toUpperCase() : "?")
@@ -443,7 +451,32 @@ export default function HouseholdsView({ onOpenHousehold, onJoinWithToken }) {
                 {h.role === "owner" ? "Owner" : "Member"}
               </p>
             </div>
-            <span style={s.chevron}>›</span>
+            <button
+              style={{
+                marginLeft: "auto",
+                flexShrink: 0,
+                background: "none",
+                border: "none",
+                color: "#9ca3af",
+                padding: "8px",
+                cursor: "pointer",
+                lineHeight: 0,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenHousehold(h.id);
+              }}
+              aria-label="Edit household"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+              </svg>
+            </button>
           </div>
         ))}
       </div>

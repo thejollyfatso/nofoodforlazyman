@@ -254,7 +254,13 @@ function decodeUserId() {
   return null;
 }
 
-export default function HouseholdDetailView({ householdId, onBack }) {
+export default function HouseholdDetailView({
+  householdId,
+  onBack,
+  activeHousehold,
+  onActivate,
+  onDeactivate,
+}) {
   // Decode user id once — the token doesn't change while this view is mounted.
   const myUserId = useMemo(() => decodeUserId(), []);
 
@@ -595,6 +601,49 @@ export default function HouseholdDetailView({ householdId, onBack }) {
 
       <div style={s.body}>
         {actionError && <div style={s.error}>{actionError}</div>}
+
+        {/* Use / Stop using */}
+        {activeHousehold?.id === householdId ? (
+          <button
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "var(--color-primary-light)",
+              border: "1.5px solid var(--color-primary)",
+              borderRadius: "var(--radius-md)",
+              color: "var(--color-primary)",
+              fontFamily: "inherit",
+              fontWeight: 600,
+              fontSize: "15px",
+              cursor: "pointer",
+              marginBottom: "4px",
+            }}
+            onClick={onDeactivate}
+          >
+            Stop using this household
+          </button>
+        ) : (
+          <button
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "var(--color-primary)",
+              border: "none",
+              borderRadius: "var(--radius-md)",
+              color: "#fff",
+              fontFamily: "inherit",
+              fontWeight: 600,
+              fontSize: "15px",
+              cursor: "pointer",
+              marginBottom: "4px",
+            }}
+            onClick={() =>
+              onActivate({ id: householdId, name: household.name })
+            }
+          >
+            Use this household
+          </button>
+        )}
 
         {/* Members list */}
         <div style={s.section}>
