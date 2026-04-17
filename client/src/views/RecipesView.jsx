@@ -630,7 +630,10 @@ export default function RecipesView({
                 <button style={s.selectAllBtn} onClick={handleSelectAll}>
                   Select All
                 </button>
-                <button style={{...s.selectAllBtn, color: "var(--color-danger)"}} onClick={handleDeselectAll}>
+                <button
+                  style={{ ...s.selectAllBtn, color: "var(--color-danger)" }}
+                  onClick={handleDeselectAll}
+                >
                   Deselect All
                 </button>
               </div>
