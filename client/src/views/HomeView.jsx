@@ -73,7 +73,8 @@ function RecipeCard({ recipe, onOpen }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "4px",
+        justifyContent: "space-between",
+        gap: "8px",
         background: "#fff",
         border: "1.5px solid var(--color-border)",
         borderRadius: "var(--radius-md)",
@@ -81,22 +82,29 @@ function RecipeCard({ recipe, onOpen }) {
         textAlign: "left",
         cursor: "pointer",
         fontFamily: "inherit",
-        width: "100%",
+        width: "160px",
+        minWidth: "160px",
+        height: "100px",
         boxSizing: "border-box",
+        flexShrink: 0,
       }}
     >
       <span
         style={{
-          fontSize: "15px",
+          fontSize: "14px",
           fontWeight: "600",
           color: "#1f2937",
           lineHeight: 1.3,
+          display: "-webkit-box",
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
         }}
       >
         {recipe.title}
       </span>
       {ingCount > 0 && (
-        <span style={{ fontSize: "13px", color: "#9ca3af" }}>
+        <span style={{ fontSize: "12px", color: "#9ca3af", flexShrink: 0 }}>
           {ingCount} ingredient{ingCount !== 1 ? "s" : ""}
         </span>
       )}
@@ -272,7 +280,7 @@ export default function HomeView({
       .then((data) => {
         if (cancelled) return;
         setRecipes(data);
-        setPreview(pickRandom(data, 3));
+        setPreview(pickRandom(data, 5));
       })
       .catch(() => {});
     return () => {
@@ -350,11 +358,73 @@ export default function HomeView({
           />
           {preview.length > 0 && (
             <div
-              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+              className="hide-scrollbar"
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                gap: "10px",
+                overflowX: "auto",
+                scrollSnapType: "x mandatory",
+                WebkitOverflowScrolling: "touch",
+                marginLeft: "-20px",
+                marginRight: "-20px",
+                paddingLeft: "20px",
+                paddingRight: "20px",
+                paddingBottom: "4px",
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              }}
             >
               {preview.map((r) => (
-                <RecipeCard key={r.id} recipe={r} onOpen={handleOpenRecipe} />
+                <div key={r.id} style={{ scrollSnapAlign: "start" }}>
+                  <RecipeCard recipe={r} onOpen={handleOpenRecipe} />
+                </div>
               ))}
+              <div style={{ scrollSnapAlign: "start" }}>
+                <button
+                  onClick={() => onNavigate("recipes", navContext)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    background: "var(--color-primary-light)",
+                    border: "1.5px solid var(--color-primary)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "14px 16px",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    width: "160px",
+                    minWidth: "160px",
+                    height: "100px",
+                    boxSizing: "border-box",
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--color-primary)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "var(--color-primary)",
+                    }}
+                  >
+                    All recipes
+                  </span>
+                </button>
+              </div>
             </div>
           )}
           {recipes.length === 0 && (
