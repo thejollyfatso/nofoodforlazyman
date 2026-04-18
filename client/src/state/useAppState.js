@@ -12,6 +12,8 @@ function decodeTokenUserId(token) {
   }
 }
 
+const NAV_VIEWS = ["home", "recipes", "shopping", "plan"];
+
 export function useAppState() {
   const [token, setToken] = useState(() => localStorage.getItem("mk_token"));
   const [view, setView] = useState("home");
@@ -89,6 +91,26 @@ export function useAppState() {
     setActiveHouseholdState(null);
     setSelectedRecipeSharedMeta(null);
     setView("home");
+  }, []);
+
+  const switchContextToPersonal = useCallback(() => {
+    localStorage.removeItem("active_household");
+    setActiveHouseholdState(null);
+    setSelectedRecipeSharedMeta(null);
+    setNavContext("personal");
+    setView((v) => (NAV_VIEWS.includes(v) ? v : "home"));
+  }, []);
+
+  const switchContextToHousehold = useCallback((household) => {
+    try {
+      localStorage.setItem("active_household", JSON.stringify(household));
+    } catch {}
+    setActiveHouseholdState(household);
+    setSelectedRecipeId(null);
+    setSelectedRecipeSharedMeta(null);
+    setRecipeNavStack([]);
+    setNavContext("household");
+    setView((v) => (NAV_VIEWS.includes(v) ? v : "home"));
   }, []);
 
   // ── Household navigation ────────────────────────────────────────────────
@@ -190,6 +212,8 @@ export function useAppState() {
     activeHousehold,
     setActiveHousehold,
     clearActiveHousehold,
+    switchContextToPersonal,
+    switchContextToHousehold,
     // Households
     selectedHouseholdId,
     openHousehold,

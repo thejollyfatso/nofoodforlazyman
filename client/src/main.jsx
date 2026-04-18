@@ -4,6 +4,7 @@ import "./index.css";
 import { useAppState } from "./state/useAppState";
 import { getDisplayContext, isAndroid } from "./utils/device";
 import { useShoppingList } from "./state/useShoppingList";
+import { apiFetch } from "./utils/apiFetch";
 import LoginView from "./views/LoginView";
 import HouseholdsView from "./views/HouseholdsView";
 import HouseholdDetailView from "./views/HouseholdDetailView";
@@ -88,25 +89,6 @@ const menuCardStyle = {
   zIndex: 200,
 };
 
-const householdPillMenuStyle = {
-  display: "block",
-  width: "100%",
-  padding: "8px 12px",
-  background: "var(--color-primary-light)",
-  border: "1.5px solid var(--color-primary)",
-  borderRadius: "20px",
-  color: "var(--color-primary)",
-  fontWeight: 700,
-  fontSize: "13px",
-  cursor: "pointer",
-  fontFamily: "inherit",
-  textAlign: "center",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-  boxSizing: "border-box",
-};
-
 const cogBtnStyle = {
   position: "fixed",
   top: "12px",
@@ -161,6 +143,12 @@ const IconPerson = () => (
 const IconPlan = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+  </svg>
+);
+
+const IconHamburger = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
   </svg>
 );
 
@@ -268,14 +256,17 @@ function NavBar({
   navContext,
   onNavigate,
   activeHousehold,
-  onOpenActiveHousehold,
+  households,
+  onSelectPersonal,
+  onSelectHousehold,
+  onMoreHouseholds,
 }) {
-  const [personalOpen, setPersonalOpen] = useState(false);
-  const [householdOpen, setHouseholdOpen] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   function closeMenus() {
-    setPersonalOpen(false);
-    setHouseholdOpen(false);
+    setContextOpen(false);
+    setMenuOpen(false);
   }
 
   function navigate(v, ctx) {
@@ -283,14 +274,12 @@ function NavBar({
     closeMenus();
   }
 
-  const personalActive = navContext === "personal" && view !== "home";
-  const householdActive =
-    (navContext === "household" && view !== "home") || view === "households";
-  const homeActive = view === "home";
+  const isPersonal = navContext === "personal" || !activeHousehold;
+  const pillLabel = isPersonal ? "Personal" : activeHousehold.name;
 
   return (
     <>
-      {(personalOpen || householdOpen) && (
+      {(contextOpen || menuOpen) && (
         <div
           style={{ position: "fixed", inset: 0, zIndex: 99 }}
           onClick={closeMenus}
@@ -298,20 +287,7 @@ function NavBar({
       )}
 
       <div style={{ ...barStyle, position: "fixed" }}>
-        {view === "home" && (
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: navContext === "household" ? "50%" : 0,
-              width: "50%",
-              height: "2px",
-              background: "var(--color-primary)",
-              opacity: 0.5,
-            }}
-          />
-        )}
-        {/* Personal (left) */}
+        {/* Left: context selector */}
         <div
           style={{
             flex: 1,
@@ -321,76 +297,55 @@ function NavBar({
           }}
         >
           <button
-            style={{ ...tabBtnStyle(personalActive), flex: 1 }}
+            style={{ ...tabBtnStyle(false), flex: 1 }}
             onClick={() => {
-              setPersonalOpen((o) => !o);
-              setHouseholdOpen(false);
+              setContextOpen((o) => !o);
+              setMenuOpen(false);
             }}
           >
-            <IconPerson />
-            Personal
+            <span
+              style={{
+                display: "inline-block",
+                padding: "3px 10px",
+                borderRadius: "20px",
+                fontSize: "12px",
+                fontWeight: "700",
+                background: isPersonal
+                  ? "#f3f4f6"
+                  : "var(--color-primary-light)",
+                color: isPersonal ? "#6b7280" : "var(--color-primary)",
+                maxWidth: "120px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {pillLabel}
+            </span>
           </button>
-          {personalOpen && (
+          {contextOpen && (
             <div style={{ ...menuCardStyle, left: 8 }}>
               <MenuRow
-                icon={<IconRecipes />}
-                label="Recipes"
-                onClick={() => navigate("recipes", "personal")}
-                active={view === "recipes" && navContext === "personal"}
-              />
-              <MenuRow
-                icon={<IconCart />}
-                label="Shopping"
-                onClick={() => navigate("shopping", "personal")}
-                active={view === "shopping" && navContext === "personal"}
-              />
-              <MenuRow
-                icon={<IconPlan />}
-                label="Plan"
-                onClick={() => navigate("plan", "personal")}
-                active={view === "plan" && navContext === "personal"}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Center spacer for home button */}
-        <div style={{ width: 72, flexShrink: 0 }} />
-
-        {/* Household (right) */}
-        <div
-          style={{
-            flex: 1,
-            position: "relative",
-            display: "flex",
-            alignItems: "stretch",
-          }}
-        >
-          <button
-            style={{ ...tabBtnStyle(householdActive), flex: 1 }}
-            onClick={() => {
-              if (activeHousehold) {
-                setHouseholdOpen((o) => !o);
-                setPersonalOpen(false);
-              } else {
-                navigate("households", "household");
-              }
-            }}
-          >
-            <IconGroup />
-            Household
-          </button>
-          {householdOpen && activeHousehold && (
-            <div style={{ ...menuCardStyle, right: 8 }}>
-              <button
+                icon={<IconPerson />}
+                label="Personal"
                 onClick={() => {
-                  onOpenActiveHousehold();
+                  onSelectPersonal();
                   closeMenus();
                 }}
-                style={householdPillMenuStyle}
-              >
-                {activeHousehold.name}
-              </button>
+                active={isPersonal}
+              />
+              {households.map((hh) => (
+                <MenuRow
+                  key={hh.id}
+                  icon={<IconGroup size={20} />}
+                  label={hh.name}
+                  onClick={() => {
+                    onSelectHousehold(hh);
+                    closeMenus();
+                  }}
+                  active={activeHousehold?.id === hh.id}
+                />
+              ))}
               <div
                 style={{
                   height: 1,
@@ -399,22 +354,59 @@ function NavBar({
                 }}
               />
               <MenuRow
+                icon={null}
+                label="More..."
+                onClick={() => {
+                  onMoreHouseholds();
+                  closeMenus();
+                }}
+                active={false}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Center spacer for home button */}
+        <div style={{ width: 72, flexShrink: 0 }} />
+
+        {/* Right: navigation menu */}
+        <div
+          style={{
+            flex: 1,
+            position: "relative",
+            display: "flex",
+            alignItems: "stretch",
+          }}
+        >
+          <button
+            style={{ ...tabBtnStyle(menuOpen), flex: 1 }}
+            onClick={() => {
+              setMenuOpen((o) => !o);
+              setContextOpen(false);
+            }}
+          >
+            <IconHamburger />
+            Menu
+          </button>
+          {menuOpen && (
+            <div style={{ ...menuCardStyle, right: 8 }}>
+              <MenuRow
                 icon={<IconRecipes />}
                 label="Recipes"
-                onClick={() => navigate("recipes", "household")}
-                active={view === "recipes" && navContext === "household"}
+                onClick={() => navigate("recipes", navContext)}
+                active={view === "recipes"}
               />
               <MenuRow
                 icon={<IconCart />}
                 label="Shopping"
-                onClick={() => navigate("shopping", "household")}
-                active={view === "shopping" && navContext === "household"}
+                onClick={() => navigate("shopping", navContext)}
+                active={view === "shopping"}
               />
               <MenuRow
                 icon={<IconPlan />}
                 label="Plan"
-                onClick={() => navigate("plan", "household")}
-                active={view === "plan" && navContext === "household"}
+                onClick={() => navigate("plan", navContext)}
+                active={view === "plan"}
               />
             </div>
           )}
@@ -422,7 +414,7 @@ function NavBar({
 
         {/* Home button — protrudes above bar */}
         <button
-          style={homeBtnStyle(homeActive)}
+          style={homeBtnStyle(view === "home")}
           onClick={() => navigate("home", null)}
           aria-label="Home"
         >
@@ -449,6 +441,8 @@ function App() {
     activeHousehold,
     setActiveHousehold,
     clearActiveHousehold,
+    switchContextToPersonal,
+    switchContextToHousehold,
     selectedHouseholdId,
     openHousehold,
     closeHousehold,
@@ -463,6 +457,15 @@ function App() {
     backFromRecipeSubView,
     backToRecipes,
   } = useAppState();
+
+  const [households, setHouseholds] = useState([]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    apiFetch("/households")
+      .then(setHouseholds)
+      .catch(() => {});
+  }, [isAuthenticated, token]);
 
   const effectiveContextType =
     navContext === "household" && activeHousehold ? "household" : "personal";
@@ -662,7 +665,10 @@ function App() {
         navContext={navContext}
         onNavigate={switchTab}
         activeHousehold={activeHousehold}
-        onOpenActiveHousehold={() => openHousehold(activeHousehold.id)}
+        households={households}
+        onSelectPersonal={switchContextToPersonal}
+        onSelectHousehold={switchContextToHousehold}
+        onMoreHouseholds={() => switchTab("households", "household")}
       />
     </>
   );
