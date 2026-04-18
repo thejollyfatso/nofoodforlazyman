@@ -113,17 +113,62 @@ function ShoppingPreview({ items, navContext, onNavigate }) {
   let icon, headline, sub, accent;
 
   if (!hasItems) {
-    icon = "🛒";
+    icon = (
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#9ca3af"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="9" cy="21" r="1" />
+        <circle cx="20" cy="21" r="1" />
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+      </svg>
+    );
     headline = "Your list is empty.";
     sub = "Add recipes or items to get started.";
     accent = "#9ca3af";
   } else if (allDone) {
-    icon = "✅";
+    icon = (
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--color-in-list)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    );
     headline = "All done!";
     sub = `${total} item${total !== 1 ? "s" : ""} checked off. Ready to clear.`;
     accent = "var(--color-in-list)";
   } else {
-    icon = "📋";
+    icon = (
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--color-primary)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="9" y="2" width="6" height="4" rx="1" />
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+        <line x1="9" y1="12" x2="15" y2="12" />
+        <line x1="9" y1="16" x2="13" y2="16" />
+      </svg>
+    );
     headline = `${total - checked} item${total - checked !== 1 ? "s" : ""} left`;
     sub =
       checked > 0
@@ -154,7 +199,9 @@ function ShoppingPreview({ items, navContext, onNavigate }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <span style={{ fontSize: "22px", lineHeight: 1 }}>{icon}</span>
+        <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+          {icon}
+        </span>
         <div>
           <div style={{ fontSize: "15px", fontWeight: "700", color: accent }}>
             {headline}
