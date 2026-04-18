@@ -1,5 +1,7 @@
 import json
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -42,6 +44,7 @@ class ShoppingItem(BaseModel):
 
 class ShoppingWriteBody(BaseModel):
     items: List[ShoppingItem]
+    operation: Optional[str] = None
 
 
 class ShoppingPatchBody(BaseModel):
@@ -81,6 +84,57 @@ def _require_hh_member(conn, household_id: str, user_id: str):
     ).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Household not found")
+
+
+def _snapshot_recipe_ids(conn, owner_type: str, owner_id: str) -> set:
+    rows = conn.execute(
+        "SELECT source_recipes FROM shopping_list_items WHERE owner_type=? AND owner_id=?",
+        (owner_type, owner_id),
+    ).fetchall()
+    ids: set = set()
+    for row in rows:
+        ids.update(json.loads(row["source_recipes"]))
+    return ids
+
+
+def _sync_bin(
+    conn,
+    context_type: str,
+    context_id: str,
+    old_ids: set,
+    new_ids: set,
+    added_by: str,
+    operation: Optional[str],
+):
+    if operation == "clear_done":
+        return
+
+    now = datetime.now(timezone.utc).isoformat()
+    expires = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
+
+    for recipe_id in new_ids - old_ids:
+        # Skip if recipe doesn't exist (deleted or test fixture with fake IDs)
+        if not conn.execute("SELECT id FROM recipes WHERE id=?", (recipe_id,)).fetchone():
+            continue
+        exists = conn.execute(
+            "SELECT id FROM meal_plan_bin"
+            " WHERE context_type=? AND context_id=? AND recipe_id=?",
+            (context_type, context_id, recipe_id),
+        ).fetchone()
+        if not exists:
+            conn.execute(
+                "INSERT INTO meal_plan_bin"
+                " (id, context_type, context_id, recipe_id, added_by, added_at, expires_at)"
+                " VALUES (?,?,?,?,?,?,?)",
+                (str(uuid4()), context_type, context_id, recipe_id, added_by, now, expires),
+            )
+
+    for recipe_id in old_ids - new_ids:
+        conn.execute(
+            "DELETE FROM meal_plan_bin"
+            " WHERE context_type=? AND context_id=? AND recipe_id=?",
+            (context_type, context_id, recipe_id),
+        )
 
 
 def _get_items(conn, owner_type: str, owner_id: str) -> list:
@@ -138,7 +192,10 @@ async def write_personal_shopping(
     body: ShoppingWriteBody, current_user: CurrentUserDep
 ):
     with get_db() as conn:
+        old_ids = _snapshot_recipe_ids(conn, "user", current_user.id)
         _write_items(conn, "user", current_user.id, body.items)
+        new_ids = {r for item in body.items for r in item.source_recipes}
+        _sync_bin(conn, "personal", current_user.id, old_ids, new_ids, current_user.id, body.operation)
         items = _get_items(conn, "user", current_user.id)
     publish(f"user:{current_user.id}", "shopping_changed")
     return _build_response(items)
@@ -212,7 +269,10 @@ async def write_household_shopping(
 ):
     with get_db() as conn:
         _require_hh_member(conn, household_id, current_user.id)
+        old_ids = _snapshot_recipe_ids(conn, "household", household_id)
         _write_items(conn, "household", household_id, body.items)
+        new_ids = {r for item in body.items for r in item.source_recipes}
+        _sync_bin(conn, "household", household_id, old_ids, new_ids, current_user.id, body.operation)
         items = _get_items(conn, "household", household_id)
     publish(f"household:{household_id}", "shopping_changed")
     return _build_response(items)

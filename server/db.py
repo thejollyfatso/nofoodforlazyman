@@ -113,4 +113,43 @@ def init_db():
 
             CREATE INDEX IF NOT EXISTS idx_shopping_owner
                 ON shopping_list_items (owner_type, owner_id);
+
+            CREATE TABLE IF NOT EXISTS meal_plan (
+                id           TEXT PRIMARY KEY,
+                context_type TEXT NOT NULL CHECK (context_type IN ('personal', 'household')),
+                context_id   TEXT NOT NULL,
+                name         TEXT NOT NULL,
+                planned_date TEXT NOT NULL,
+                persistent   INTEGER NOT NULL DEFAULT 0,
+                created_by   TEXT NOT NULL REFERENCES users(id),
+                created_at   TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS meal_plan_recipes (
+                meal_plan_id TEXT NOT NULL REFERENCES meal_plan(id) ON DELETE CASCADE,
+                recipe_id    TEXT NOT NULL REFERENCES recipes(id),
+                PRIMARY KEY (meal_plan_id, recipe_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS meal_plan_members (
+                meal_plan_id TEXT NOT NULL REFERENCES meal_plan(id) ON DELETE CASCADE,
+                user_id      TEXT NOT NULL REFERENCES users(id),
+                PRIMARY KEY (meal_plan_id, user_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS meal_plan_bin (
+                id           TEXT PRIMARY KEY,
+                context_type TEXT NOT NULL CHECK (context_type IN ('personal', 'household')),
+                context_id   TEXT NOT NULL,
+                recipe_id    TEXT NOT NULL REFERENCES recipes(id),
+                added_by     TEXT NOT NULL REFERENCES users(id),
+                added_at     TEXT NOT NULL,
+                expires_at   TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_meal_plan_ctx
+                ON meal_plan (context_type, context_id);
+
+            CREATE INDEX IF NOT EXISTS idx_meal_plan_bin_ctx
+                ON meal_plan_bin (context_type, context_id);
         """)

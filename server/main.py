@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from server.db import init_db
-from server.routers import auth, events, households, recipes, shopping
+from server.routers import auth, events, households, meal_planning, recipes, shopping
 
 DIST_DIR = Path(__file__).parent.parent / "client" / "dist"
 ALLOWED_ORIGINS = ["https://nf4lm.deleonanddeleon.com"]
@@ -49,6 +49,7 @@ app.include_router(auth.router, prefix="/auth")
 app.include_router(households.router, prefix="/households")
 app.include_router(recipes.router, prefix="/recipes")
 app.include_router(shopping.router)
+app.include_router(meal_planning.router)
 app.include_router(events.router)
 
 

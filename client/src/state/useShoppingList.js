@@ -359,12 +359,14 @@ export function useShoppingList({ contextType, ownerId }, token) {
     };
   }, [contextType, ownerId, token, fetchList]);
 
-  async function writeList(newItems) {
+  async function writeList(newItems, operation = null) {
     setItems(newItems);
     try {
+      const body = { items: newItems };
+      if (operation) body.operation = operation;
       const data = await apiFetch(basePath, {
         method: "POST",
-        body: JSON.stringify({ items: newItems }),
+        body: JSON.stringify(body),
       });
       setItems(data.items);
       setError(null);
@@ -437,7 +439,10 @@ export function useShoppingList({ contextType, ownerId }, token) {
   }
 
   async function handleClearDone() {
-    await writeList(items.filter((i) => !i.checked));
+    await writeList(
+      items.filter((i) => !i.checked),
+      "clear_done"
+    );
   }
 
   async function handleClearAll() {

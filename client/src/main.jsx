@@ -4,6 +4,7 @@ import "./index.css";
 import { useAppState } from "./state/useAppState";
 import { getDisplayContext, isAndroid } from "./utils/device";
 import { useShoppingList } from "./state/useShoppingList";
+import { useMealPlan } from "./state/useMealPlan";
 import { apiFetch } from "./utils/apiFetch";
 import LoginView from "./views/LoginView";
 import HouseholdsView from "./views/HouseholdsView";
@@ -478,6 +479,16 @@ function App() {
     token
   );
 
+  const planContextId =
+    effectiveContextType === "household"
+      ? (activeHousehold?.id ?? null)
+      : currentUserId;
+
+  const mealPlan = useMealPlan({
+    contextType: effectiveContextType,
+    contextId: planContextId,
+  });
+
   const urlJoinToken = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("join");
@@ -656,7 +667,15 @@ function App() {
           currentUserId={currentUserId}
         />
       )}
-      {view === "plan" && <PlanView />}
+      {view === "plan" && (
+        <PlanView
+          mealPlan={mealPlan}
+          shopping={shopping}
+          activeHousehold={navContext === "household" ? activeHousehold : null}
+          currentUserId={currentUserId}
+          navContext={navContext}
+        />
+      )}
       <button style={cogBtnStyle} onClick={openSettings} aria-label="Settings">
         <IconCog />
       </button>
