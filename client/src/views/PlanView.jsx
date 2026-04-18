@@ -785,7 +785,7 @@ function initForm(recipe) {
     date: todayStr(),
     assignedTo: [],
     persistent: false,
-    shoppingChoices: { [recipe.recipe_id]: "all" },
+    shoppingChoices: { [recipe.recipe_id]: "none" },
     selectedIngredients: {},
   };
 }
@@ -920,13 +920,17 @@ export default function PlanView({
 
   function addRecipeToForm(recipe, formType) {
     const entry = { recipe_id: recipe.id, recipe };
+    const inBin = bin.some((b) => b.recipe_id === recipe.id);
     const setter = formType === "create" ? setCreateForm : setEditForm;
     setter((f) => {
       if (f.recipes.some((r) => r.recipe_id === recipe.id)) return f;
       return {
         ...f,
         recipes: [...f.recipes, entry],
-        shoppingChoices: { ...f.shoppingChoices, [recipe.id]: "all" },
+        shoppingChoices: {
+          ...f.shoppingChoices,
+          [recipe.id]: inBin ? "none" : "all",
+        },
       };
     });
     setShowRecipePicker(false);

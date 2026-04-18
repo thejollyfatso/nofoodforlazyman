@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "../utils/apiFetch";
+
+const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -11,10 +13,11 @@ function plusDaysStr(n) {
   return d.toISOString().slice(0, 10);
 }
 
-export function useMealPlan({ contextType, contextId }) {
+export function useMealPlan({ contextType, contextId }, token) {
   const [bin, setBin] = useState([]);
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(false);
+  const esRef = useRef(null);
 
   const basePath =
     contextType === "household"
@@ -50,6 +53,26 @@ export function useMealPlan({ contextType, contextId }) {
     }
     load();
   }, [fetchBin, fetchMeals]);
+
+  // Re-fetch bin whenever shopping list changes
+  useEffect(() => {
+    if (!contextId || !token) return;
+
+    const params =
+      contextType === "household"
+        ? `?token=${encodeURIComponent(token)}&household_id=${contextId}`
+        : `?token=${encodeURIComponent(token)}`;
+
+    const es = new EventSource(`${BASE_URL}/events${params}`);
+    esRef.current = es;
+    es.addEventListener("shopping_changed", fetchBin);
+    es.onerror = () => {};
+
+    return () => {
+      es.close();
+      esRef.current = null;
+    };
+  }, [contextType, contextId, token, fetchBin]);
 
   async function createMeal(body) {
     const meal = await apiFetch(basePath, {

@@ -484,10 +484,10 @@ function App() {
       ? (activeHousehold?.id ?? null)
       : currentUserId;
 
-  const mealPlan = useMealPlan({
-    contextType: effectiveContextType,
-    contextId: planContextId,
-  });
+  const mealPlan = useMealPlan(
+    { contextType: effectiveContextType, contextId: planContextId },
+    token
+  );
 
   const urlJoinToken = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
