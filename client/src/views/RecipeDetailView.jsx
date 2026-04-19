@@ -67,6 +67,15 @@ const s = {
     fontSize: "13px",
     color: "#6b7280",
   },
+  copiedTag: {
+    fontSize: "12px",
+    fontWeight: "600",
+    color: "var(--color-primary)",
+    background: "var(--color-primary-light)",
+    borderRadius: "var(--radius-sm)",
+    padding: "3px 8px",
+    alignSelf: "flex-start",
+  },
   sectionLabel: {
     fontSize: "12px",
     fontWeight: "700",
@@ -356,6 +365,9 @@ export default function RecipeDetailView({
           <div style={s.sharerRow}>
             <span style={s.sharerName}>{sharedMeta.shared_by.alias || ""}</span>
           </div>
+        )}
+        {!isHousehold && recipe.copied_from_alias && (
+          <span style={s.copiedTag}>from {recipe.copied_from_alias}</span>
         )}
 
         {ingredients.length > 0 && (
