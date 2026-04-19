@@ -3,14 +3,21 @@ import { apiFetch } from "../utils/apiFetch";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
+function localDateStr(d) {
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const dy = String(d.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${dy}`;
+}
+
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateStr(new Date());
 }
 
 function plusDaysStr(n) {
   const d = new Date();
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  return localDateStr(d);
 }
 
 export function useMealPlan({ contextType, contextId }, token) {
