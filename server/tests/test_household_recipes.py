@@ -305,6 +305,89 @@ def test_patch_obfuscate_not_shared(client, make_household):
     assert resp.status_code == 404
 
 
+# ── Save a copy ───────────────────────────────────────────────────────────────
+
+def test_save_copy_from_household_recipe(client, make_user, make_household, add_member):
+    household, owner = make_household()
+    member = make_user()
+    add_member(household["id"], member["id"])
+
+    recipe = make_recipe(
+        client, owner,
+        ingredients=[{"qty": "1", "unit": "cup", "name": "flour"}],
+    )
+    share(client, household["id"], recipe["id"], owner)
+
+    # Member sees the recipe and saves a copy
+    visible = client.get(
+        f"/households/{household['id']}/recipes", headers=auth(member["token"])
+    ).json()[0]
+
+    copy_resp = client.post(
+        "/recipes",
+        json={
+            "title": f"{visible['shared_by']['alias'] or 'Owner'}'s {visible['title']}",
+            "notes": visible.get("notes", ""),
+            "ingredients": visible["ingredients"],
+            "copied_from_user_id": owner["id"],
+            "copied_from_alias": visible["shared_by"]["alias"] or "",
+        },
+        headers=auth(member["token"]),
+    )
+    assert copy_resp.status_code == 200
+    copy = copy_resp.json()
+    assert copy["copied_from_user_id"] == owner["id"]
+    assert copy["ingredients"][0]["name"] == "flour"
+
+    member_list = client.get("/recipes", headers=auth(member["token"])).json()
+    assert any(r["id"] == copy["id"] for r in member_list)
+
+
+def test_save_copy_excludes_obfuscated_secret_ingredients(
+    client, make_user, make_household, add_member
+):
+    household, owner = make_household()
+    member = make_user()
+    add_member(household["id"], member["id"])
+
+    recipe = make_recipe(
+        client, owner,
+        ingredients=[
+            {"qty": "1", "unit": "cup", "name": "flour", "secret": False},
+            {"qty": "1", "unit": "tsp", "name": "secret spice", "secret": True},
+        ],
+    )
+    share(client, household["id"], recipe["id"], owner)
+    client.patch(
+        f"/households/{household['id']}/recipes/{recipe['id']}",
+        json={"obfuscate_secrets": True},
+        headers=auth(owner["token"]),
+    )
+
+    # Member fetches household recipes — secret spice is stripped server-side
+    visible = client.get(
+        f"/households/{household['id']}/recipes", headers=auth(member["token"])
+    ).json()[0]
+    visible_names = [i["name"] for i in visible["ingredients"]]
+    assert "secret spice" not in visible_names
+
+    # Member saves a copy using only what they could see
+    copy_resp = client.post(
+        "/recipes",
+        json={
+            "title": f"Owner's {visible['title']}",
+            "ingredients": visible["ingredients"],
+            "copied_from_user_id": owner["id"],
+            "copied_from_alias": "Owner",
+        },
+        headers=auth(member["token"]),
+    )
+    assert copy_resp.status_code == 200
+    copy_ings = [i["name"] for i in copy_resp.json()["ingredients"]]
+    assert "flour" in copy_ings
+    assert "secret spice" not in copy_ings
+
+
 # ── Cascade behaviors ─────────────────────────────────────────────────────────
 
 def test_delete_recipe_removes_from_household(client, make_household, db_path):

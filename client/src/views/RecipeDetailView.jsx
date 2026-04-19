@@ -220,6 +220,8 @@ export default function RecipeDetailView({
   const [subModal, setSubModal] = useState(null);
   const [obfuscate, setObfuscate] = useState(false);
   const [obfuscateSaving, setObfuscateSaving] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [copyDone, setCopyDone] = useState(false);
 
   const isHousehold = !!sharedMeta;
   const isOwner =
@@ -265,6 +267,27 @@ export default function RecipeDetailView({
       setObfuscate(!checked);
     } finally {
       setObfuscateSaving(false);
+    }
+  }
+
+  async function handleSaveCopy() {
+    if (copying || copyDone) return;
+    setCopying(true);
+    const alias = sharedMeta?.shared_by?.alias || "Unknown";
+    try {
+      await apiFetch("/recipes", {
+        method: "POST",
+        body: JSON.stringify({
+          title: `${alias}'s ${recipe.title}`,
+          notes: recipe.notes || "",
+          ingredients: recipe.ingredients || [],
+          copied_from_user_id: sharedMeta.shared_by.user_id,
+          copied_from_alias: alias,
+        }),
+      });
+      setCopyDone(true);
+    } finally {
+      setCopying(false);
     }
   }
 
@@ -317,7 +340,15 @@ export default function RecipeDetailView({
           <button style={s.editBtn} onClick={() => onEdit(recipe.id)}>
             Edit
           </button>
-        ) : null}
+        ) : (
+          <button
+            style={s.editBtn}
+            onClick={handleSaveCopy}
+            disabled={copying || copyDone}
+          >
+            {copyDone ? "Saved" : copying ? "Saving…" : "Save a Copy"}
+          </button>
+        )}
       </div>
 
       <div style={s.body}>

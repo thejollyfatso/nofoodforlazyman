@@ -65,12 +65,33 @@ Each shared recipe has an obfuscation setting controlled by the sharing owner:
 
 ---
 
+## Saving a copy
+
+Any member (including non-owners) can save a household recipe to their own
+personal masterlist. This creates an independent copy owned by the saving user.
+
+- The copy is titled **"{Creator Alias}'s {original recipe name}"** — alias is
+  captured at time of copy from the sharer's household alias
+- The copy's `copied_from_alias` is immutable — it does not change if the
+  original sharer later updates their alias
+- `copied_from_user_id` records the original sharer's user ID
+- Secret ingredients: the copy contains only what the saving user could see
+  at the time of copy (obfuscated secrets are stripped server-side before
+  the response is received, so they are never included)
+- The saved copy is entirely independent — edits to the original do not
+  propagate, and deleting the original does not affect the copy
+- The "Save a Copy" button appears in the header in the same position and
+  style as the Edit button would appear for the recipe's owner
+
+---
+
 ## Write access
 
 - Non-owners cannot edit shared recipes
 - Any member (including non-owners) can add a shared recipe to the household
   shopping list
 - Any member can use Choose Ingredients for partial adds of a shared recipe
+- Any member can save a copy of a shared recipe to their personal masterlist
 
 ---
 

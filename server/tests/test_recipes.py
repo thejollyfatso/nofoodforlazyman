@@ -131,6 +131,77 @@ def test_create_recipe_strips_title_whitespace(client, make_user):
     assert resp.json()["title"] == "Soup"
 
 
+# ── Save a copy (POST /recipes with copy metadata) ───────────────────────────
+
+def test_save_copy_stores_metadata(client, make_user):
+    copier = make_user()
+    original_owner = make_user()
+    resp = client.post(
+        "/recipes",
+        json={
+            "title": "Alice's Pasta",
+            "notes": "great dish",
+            "ingredients": [{"qty": "200", "unit": "g", "name": "pasta"}],
+            "copied_from_user_id": original_owner["id"],
+            "copied_from_alias": "Alice",
+        },
+        headers=auth(copier["token"]),
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["title"] == "Alice's Pasta"
+    assert data["copied_from_user_id"] == original_owner["id"]
+    assert data["copied_from_alias"] == "Alice"
+
+
+def test_save_copy_appears_in_copier_list_only(client, make_user):
+    copier = make_user()
+    original_owner = make_user()
+    original = client.post(
+        "/recipes", json={"title": "Original"}, headers=auth(original_owner["token"])
+    ).json()
+
+    client.post(
+        "/recipes",
+        json={
+            "title": "Bob's Original",
+            "copied_from_user_id": original_owner["id"],
+            "copied_from_alias": "Bob",
+        },
+        headers=auth(copier["token"]),
+    )
+
+    copier_list = client.get("/recipes", headers=auth(copier["token"])).json()
+    owner_list = client.get("/recipes", headers=auth(original_owner["token"])).json()
+
+    assert any(r["title"] == "Bob's Original" for r in copier_list)
+    assert not any(r["title"] == "Bob's Original" for r in owner_list)
+    assert any(r["id"] == original["id"] for r in owner_list)
+
+
+def test_save_copy_independent_of_original(client, make_user):
+    copier = make_user()
+    original_owner = make_user()
+    original = client.post(
+        "/recipes", json={"title": "Original"}, headers=auth(original_owner["token"])
+    ).json()
+
+    copy = client.post(
+        "/recipes",
+        json={
+            "title": "Copy's Original",
+            "copied_from_user_id": original_owner["id"],
+            "copied_from_alias": "Copy",
+        },
+        headers=auth(copier["token"]),
+    ).json()
+
+    client.delete(f"/recipes/{original['id']}", headers=auth(original_owner["token"]))
+
+    copier_list = client.get("/recipes", headers=auth(copier["token"])).json()
+    assert any(r["id"] == copy["id"] for r in copier_list)
+
+
 # ── PATCH /recipes/{id} ───────────────────────────────────────────────────────
 
 def test_patch_recipe_title(client, make_user):
