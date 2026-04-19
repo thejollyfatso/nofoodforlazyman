@@ -855,10 +855,14 @@ export default function PlanView({
   }, [isHousehold, activeHousehold]);
 
   useEffect(() => {
-    apiFetch("/recipes")
+    const url =
+      isHousehold && activeHousehold
+        ? `/households/${activeHousehold.id}/recipes`
+        : "/recipes";
+    apiFetch(url)
       .then((d) => setAllRecipes(Array.isArray(d) ? d : []))
       .catch(() => {});
-  }, []);
+  }, [isHousehold, activeHousehold]);
 
   function getMemberAlias(uid) {
     const m = members.find((m) => m.user_id === uid);
