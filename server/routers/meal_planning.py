@@ -20,6 +20,8 @@ class CreateMealBody(BaseModel):
     recipe_ids: List[str]
     assigned_to: List[str] = []
     persistent: bool = False
+    notes: Optional[str] = None
+    color: Optional[str] = None
 
 
 class UpdateMealBody(BaseModel):
@@ -28,6 +30,8 @@ class UpdateMealBody(BaseModel):
     recipe_ids: Optional[List[str]] = None
     assigned_to: Optional[List[str]] = None
     persistent: Optional[bool] = None
+    notes: Optional[str] = None
+    color: Optional[str] = None
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -85,6 +89,8 @@ def _build_meal(conn, row) -> dict:
         "persistent": bool(row["persistent"]),
         "created_by": row["created_by"],
         "created_at": row["created_at"],
+        "notes": row["notes"],
+        "color": row["color"],
         "recipes": [
             {
                 "id": r["id"],
@@ -143,13 +149,14 @@ def _create_meal(
     now = _now_iso()
     conn.execute(
         "INSERT INTO meal_plan"
-        " (id, context_type, context_id, name, planned_date, persistent, created_by, created_at)"
-        " VALUES (?,?,?,?,?,?,?,?)",
+        " (id, context_type, context_id, name, planned_date, persistent, created_by, created_at, notes, color)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?)",
         (
             meal_id, context_type, context_id,
             body.name, body.planned_date,
             1 if body.persistent else 0,
             user_id, now,
+            body.notes, body.color,
         ),
     )
     for recipe_id in body.recipe_ids:
@@ -186,6 +193,12 @@ def _update_meal(conn, meal_id: str, context_type: str, context_id: str, body: U
     if body.persistent is not None:
         updates.append("persistent=?")
         values.append(1 if body.persistent else 0)
+    if body.notes is not None:
+        updates.append("notes=?")
+        values.append(body.notes)
+    if body.color is not None:
+        updates.append("color=?")
+        values.append(body.color)
 
     if updates:
         values.append(meal_id)

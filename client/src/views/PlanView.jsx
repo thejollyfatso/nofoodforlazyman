@@ -114,8 +114,8 @@ const s = {
     fontWeight: isToday ? "700" : "400",
     color: isToday ? "var(--color-primary)" : "#374151",
   }),
-  mealCard: {
-    background: "#fff",
+  mealCard: (color) => ({
+    background: color || "#fff",
     border: "1.5px solid var(--color-border)",
     borderRadius: "var(--radius-sm)",
     padding: "8px 12px",
@@ -124,6 +124,14 @@ const s = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+  }),
+  mealCardNotes: {
+    fontSize: "11px",
+    color: "#6b7280",
+    margin: "2px 0 0",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
   mealCardLeft: {
     flex: 1,
@@ -218,6 +226,36 @@ const s = {
     boxSizing: "border-box",
     marginBottom: "14px",
   },
+  textareaInput: {
+    width: "100%",
+    fontSize: "16px",
+    padding: "10px 12px",
+    border: "1.5px solid var(--color-border)",
+    borderRadius: "var(--radius-sm)",
+    fontFamily: "inherit",
+    background: "#fff",
+    outline: "none",
+    boxSizing: "border-box",
+    marginBottom: "14px",
+    resize: "vertical",
+    minHeight: "72px",
+  },
+  colorRow: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+    marginBottom: "14px",
+  },
+  colorSwatch: (hex, selected) => ({
+    width: "28px",
+    height: "28px",
+    borderRadius: "50%",
+    background: hex || "#fff",
+    border: selected ? "2.5px solid #111" : "1.5px solid var(--color-border)",
+    cursor: "pointer",
+    flexShrink: 0,
+    boxSizing: "border-box",
+  }),
   recipeBlock: {
     border: "1.5px solid var(--color-border)",
     borderRadius: "var(--radius-sm)",
@@ -788,6 +826,8 @@ function initForm(recipe) {
     date: todayStr(),
     assignedTo: [],
     persistent: false,
+    notes: "",
+    color: "",
     shoppingChoices: { [recipe.recipe_id]: "none" },
     selectedIngredients: {},
   };
@@ -800,6 +840,8 @@ function initEmptyForm() {
     date: todayStr(),
     assignedTo: [],
     persistent: false,
+    notes: "",
+    color: "",
     shoppingChoices: {},
     selectedIngredients: {},
   };
@@ -815,6 +857,8 @@ function initEditForm(meal) {
     date: meal.planned_date,
     assignedTo: [...meal.assigned_to],
     persistent: meal.persistent,
+    notes: meal.notes || "",
+    color: meal.color || "",
     recipes: meal.recipes.map((r) => ({ recipe_id: r.id, recipe: r })),
     shoppingChoices: choices,
     selectedIngredients: {},
@@ -846,6 +890,7 @@ export default function PlanView({
   const [calSelectedDate, setCalSelectedDate] = useState(null);
   const [mealDeleteState, setMealDeleteState] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   useEffect(() => {
     if (!isHousehold || !activeHousehold) return;
@@ -883,6 +928,7 @@ export default function PlanView({
     setCreateForm(null);
     setIngStep(null);
     setShowRecipePicker(false);
+    setSaveError(null);
   }
 
   function setCreateField(field, value) {
@@ -971,6 +1017,7 @@ export default function PlanView({
   async function handleConfirmCreate() {
     if (!createForm || saving) return;
     setSaving(true);
+    setSaveError(null);
     try {
       await applyShoppingChoices(createForm);
       await createMeal({
@@ -979,8 +1026,12 @@ export default function PlanView({
         recipe_ids: createForm.recipes.map((r) => r.recipe_id),
         assigned_to: createForm.assignedTo,
         persistent: createForm.persistent,
+        notes: createForm.notes,
+        color: createForm.color,
       });
       closeCreate();
+    } catch (err) {
+      setSaveError(err.message || "Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -998,6 +1049,7 @@ export default function PlanView({
     setEditForm(null);
     setIngStep(null);
     setShowRecipePicker(false);
+    setSaveError(null);
   }
 
   function setEditField(field, value) {
@@ -1007,6 +1059,7 @@ export default function PlanView({
   async function handleConfirmEdit() {
     if (!editMeal || !editForm || saving) return;
     setSaving(true);
+    setSaveError(null);
     try {
       await applyShoppingChoices(editForm);
       await updateMeal(editMeal.id, {
@@ -1015,8 +1068,12 @@ export default function PlanView({
         recipe_ids: editForm.recipes.map((r) => r.recipe_id),
         assigned_to: editForm.assignedTo,
         persistent: editForm.persistent,
+        notes: editForm.notes,
+        color: editForm.color,
       });
       closeEdit();
+    } catch (err) {
+      setSaveError(err.message || "Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -1252,6 +1309,35 @@ export default function PlanView({
 
         {renderMemberChips(form, setter)}
 
+        <p style={s.fieldLabel}>Notes</p>
+        <textarea
+          style={s.textareaInput}
+          value={form.notes}
+          onChange={(e) => setField("notes", e.target.value)}
+          placeholder="Any notes for this meal…"
+        />
+
+        <p style={s.fieldLabel}>Color</p>
+        <div style={s.colorRow}>
+          {[
+            "",
+            "#FDE68A",
+            "#BBF7D0",
+            "#BAE6FD",
+            "#DDD6FE",
+            "#FECACA",
+            "#FED7AA",
+            "#F9A8D4",
+          ].map((hex) => (
+            <button
+              key={hex || "none"}
+              style={s.colorSwatch(hex, form.color === hex)}
+              onClick={() => setField("color", hex)}
+              aria-label={hex || "no color"}
+            />
+          ))}
+        </div>
+
         <div style={s.persistentRow}>
           <span style={s.persistentLabel}>Keep meal forever</span>
           {renderToggle(form.persistent, () =>
@@ -1361,7 +1447,7 @@ export default function PlanView({
                 dayMeals.map((meal) => (
                   <div
                     key={meal.id}
-                    style={s.mealCard}
+                    style={s.mealCard(meal.color)}
                     onClick={() => openEdit(meal)}
                   >
                     <div style={s.mealCardLeft}>
@@ -1369,6 +1455,9 @@ export default function PlanView({
                       <p style={s.mealCardRecipes}>
                         {meal.recipes.map((r) => r.title).join(", ")}
                       </p>
+                      {meal.notes && (
+                        <p style={s.mealCardNotes}>{meal.notes}</p>
+                      )}
                     </div>
                     {isHousehold && meal.assigned_to.length > 0 && (
                       <div
@@ -1414,6 +1503,18 @@ export default function PlanView({
             >
               {saving ? "Saving…" : "Plan Meal"}
             </button>
+            {saveError && (
+              <p
+                style={{
+                  color: "var(--color-danger)",
+                  fontSize: "13px",
+                  margin: "8px 0 0",
+                  textAlign: "center",
+                }}
+              >
+                {saveError}
+              </p>
+            )}
             <button style={s.cancelBtn} onClick={closeCreate}>
               Cancel
             </button>
@@ -1435,6 +1536,18 @@ export default function PlanView({
             >
               {saving ? "Saving…" : "Save"}
             </button>
+            {saveError && (
+              <p
+                style={{
+                  color: "var(--color-danger)",
+                  fontSize: "13px",
+                  margin: "8px 0 0",
+                  textAlign: "center",
+                }}
+              >
+                {saveError}
+              </p>
+            )}
             <div style={s.divider} />
             <button
               style={s.dangerBtn}

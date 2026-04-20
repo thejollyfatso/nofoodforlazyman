@@ -122,7 +122,9 @@ def init_db():
                 planned_date TEXT NOT NULL,
                 persistent   INTEGER NOT NULL DEFAULT 0,
                 created_by   TEXT NOT NULL REFERENCES users(id),
-                created_at   TEXT NOT NULL
+                created_at   TEXT NOT NULL,
+                notes        TEXT,
+                color        TEXT
             );
 
             CREATE TABLE IF NOT EXISTS meal_plan_recipes (
@@ -153,3 +155,8 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_meal_plan_bin_ctx
                 ON meal_plan_bin (context_type, context_id);
         """)
+        for col, definition in [("notes", "TEXT"), ("color", "TEXT")]:
+            try:
+                conn.execute(f"ALTER TABLE meal_plan ADD COLUMN {col} {definition}")
+            except Exception:
+                pass
