@@ -113,8 +113,9 @@ function RecipeCard({ recipe, onOpen }) {
 }
 
 function ShoppingPreview({ items, navContext, onNavigate }) {
-  const total = items.length;
-  const checked = items.filter((i) => i.checked).length;
+  const nonDividers = items.filter((i) => i.item_type !== "divider");
+  const total = nonDividers.length;
+  const checked = nonDividers.filter((i) => i.checked).length;
   const allDone = total > 0 && checked === total;
   const hasItems = total > 0;
 
@@ -185,8 +186,8 @@ function ShoppingPreview({ items, navContext, onNavigate }) {
     accent = "var(--color-primary)";
   }
 
-  const preview = items.filter((i) => !i.checked).slice(0, 3);
-  const remaining = items.filter((i) => !i.checked).length - 3;
+  const preview = nonDividers.filter((i) => !i.checked).slice(0, 3);
+  const remaining = nonDividers.filter((i) => !i.checked).length - 3;
 
   return (
     <button

@@ -121,14 +121,17 @@ const s = {
     background: "var(--color-border)",
   },
   // User-created divider row
-  sectionDividerRow: (dragOver) => ({
+  sectionDividerRow: (dragOver, dragUp) => ({
     display: "flex",
     alignItems: "center",
     padding: "6px 8px 6px 16px",
     background: "#fff",
-    borderBottom: dragOver
-      ? "2px solid var(--color-primary)"
-      : "1px solid var(--color-border)",
+    borderTop:
+      dragOver && dragUp ? "2px solid var(--color-primary)" : undefined,
+    borderBottom:
+      dragOver && !dragUp
+        ? "2px solid var(--color-primary)"
+        : "1px solid var(--color-border)",
     gap: "8px",
     cursor: "default",
   }),
@@ -195,14 +198,17 @@ const s = {
     touchAction: "none",
     color: "#d1d5db",
   },
-  itemRow: (checked, dragOver, dragging) => ({
+  itemRow: (checked, dragOver, dragging, dragUp) => ({
     display: "flex",
     alignItems: "flex-start",
     padding: "12px 8px 12px 16px",
     background: "#fff",
-    borderBottom: dragOver
-      ? "2px solid var(--color-primary)"
-      : "1px solid var(--color-border)",
+    borderTop:
+      dragOver && dragUp ? "2px solid var(--color-primary)" : undefined,
+    borderBottom:
+      dragOver && !dragUp
+        ? "2px solid var(--color-primary)"
+        : "1px solid var(--color-border)",
     opacity: dragging ? 0.4 : checked ? 0.55 : 1,
     gap: "12px",
   }),
@@ -531,6 +537,14 @@ export default function ShoppingView({
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
   const dragStateRef = useRef(null); // { id, overTargetId }
+  const draggingIdx = draggingId
+    ? items.findIndex((i) => i.id === draggingId)
+    : -1;
+  const dragOverIdx = dragOverId
+    ? items.findIndex((i) => i.id === dragOverId)
+    : -1;
+  const dragIndicatorAbove =
+    draggingIdx !== -1 && dragOverIdx !== -1 && draggingIdx > dragOverIdx;
 
   function getMemberAlias(userId) {
     const m = members.find((m) => m.user_id === userId);
@@ -737,7 +751,7 @@ export default function ShoppingView({
         key={item.id}
         data-item-id={item.id}
         style={{
-          ...s.sectionDividerRow(isDragOver),
+          ...s.sectionDividerRow(isDragOver, dragIndicatorAbove),
           opacity: isDragging ? 0.4 : 1,
           pointerEvents: isDragging ? "none" : undefined,
         }}
@@ -814,7 +828,12 @@ export default function ShoppingView({
         key={item.id}
         data-item-id={item.id}
         style={{
-          ...s.itemRow(item.checked, isDragOver, isDragging),
+          ...s.itemRow(
+            item.checked,
+            isDragOver,
+            isDragging,
+            dragIndicatorAbove
+          ),
           pointerEvents: isDragging ? "none" : undefined,
         }}
       >
