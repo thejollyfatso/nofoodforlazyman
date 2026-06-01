@@ -42,7 +42,7 @@ const s = {
     background: "var(--color-bg)",
     display: "flex",
     flexDirection: "column",
-    paddingBottom: "56px",
+    paddingBottom: "108px",
   },
   header: { padding: "20px 20px 0" },
   titleRow: {
@@ -95,6 +95,7 @@ const s = {
     flex: 1,
   },
   addBtn: {
+    flex: 1,
     background: "var(--color-primary)",
     color: "#fff",
     border: "none",
@@ -104,9 +105,9 @@ const s = {
     fontWeight: "600",
     cursor: "pointer",
     fontFamily: "inherit",
-    width: "100%",
   },
   shareBtn: {
+    flex: 1,
     background: "#fff",
     color: "var(--color-primary)",
     border: "1.5px solid var(--color-primary)",
@@ -116,8 +117,41 @@ const s = {
     fontWeight: "600",
     cursor: "pointer",
     fontFamily: "inherit",
-    width: "100%",
   },
+  actionBar: {
+    position: "fixed",
+    bottom: "56px",
+    left: 0,
+    right: 0,
+    display: "flex",
+    gap: "10px",
+    padding: "10px 16px",
+    background: "#fff",
+    borderTop: "1px solid var(--color-border)",
+    zIndex: 50,
+  },
+  searchToggleRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    marginTop: "2px",
+  },
+  compactSeg: {
+    display: "flex",
+    border: "1.5px solid var(--color-border)",
+    borderRadius: "var(--radius-sm)",
+    overflow: "hidden",
+    background: "#fff",
+  },
+  compactSegBtn: (active) => ({
+    padding: "6px 14px",
+    fontSize: "13px",
+    fontWeight: "600",
+    border: "none",
+    background: active ? "var(--color-primary)" : "transparent",
+    color: active ? "#fff" : "#374151",
+    cursor: "pointer",
+    fontFamily: "inherit",
+  }),
   card: {
     background: "#fff",
     border: "1.5px solid var(--color-border)",
@@ -805,6 +839,32 @@ export default function RecipesView({
     return { matchAll, matchAny };
   }
 
+  function filterBooks(list, isHousehold) {
+    const q = query.trim();
+    const sorted = (arr) =>
+      [...arr].sort((a, b) => a.name.localeCompare(b.name));
+    if (!q) return sorted(list);
+    const ql = q.toLowerCase();
+
+    if (searchMode === "recipe") {
+      return sorted(list.filter((b) => b.name.toLowerCase().includes(ql)));
+    }
+
+    if (isHousehold) {
+      return sorted(
+        list.filter((b) =>
+          (b.recipes || []).some((r) => r.title.toLowerCase().includes(ql))
+        )
+      );
+    }
+    const matchIds = new Set(
+      recipes.filter((r) => r.title.toLowerCase().includes(ql)).map((r) => r.id)
+    );
+    return sorted(
+      list.filter((b) => (b.recipe_ids || []).some((id) => matchIds.has(id)))
+    );
+  }
+
   // ── Sub-components ───────────────────────────────────────────────────────────
 
   function RecipeCard({ recipe, sharedBy, showRemoveFromBook }) {
@@ -957,6 +1017,58 @@ export default function RecipesView({
     return sections;
   }
 
+  // ── Action bar ───────────────────────────────────────────────────────────────
+
+  function renderActionBar() {
+    if (selectedBook) {
+      if (!activeHousehold) {
+        return (
+          <div style={s.actionBar}>
+            <button style={s.shareBtn} onClick={() => setShowAddToBook(true)}>
+              + Add Recipes to Book
+            </button>
+          </div>
+        );
+      }
+      return null;
+    }
+
+    if (contentMode === "books") {
+      if (activeHousehold) {
+        if (householdBooksLoading) return null;
+        return (
+          <div style={s.actionBar}>
+            <button style={s.shareBtn} onClick={openSharePicker}>
+              Share
+            </button>
+          </div>
+        );
+      }
+      if (booksLoading) return null;
+      return (
+        <div style={s.actionBar}>
+          <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
+            +
+          </button>
+        </div>
+      );
+    }
+
+    if (loading) return null;
+    return (
+      <div style={s.actionBar}>
+        <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
+          +
+        </button>
+        {activeHousehold && (
+          <button style={s.shareBtn} onClick={openSharePicker}>
+            Share
+          </button>
+        )}
+      </div>
+    );
+  }
+
   // ── Page content (no modals) ─────────────────────────────────────────────────
 
   function renderRecipesList() {
@@ -1101,11 +1213,6 @@ export default function RecipesView({
             </div>
           </div>
           <div style={s.body}>
-            {!isHhBook && (
-              <button style={s.shareBtn} onClick={() => setShowAddToBook(true)}>
-                + Add Recipes to Book
-              </button>
-            )}
             {display.length === 0 && !q && (
               <p style={s.empty}>
                 {isHhBook
@@ -1132,6 +1239,8 @@ export default function RecipesView({
     // ── Books list ─────────────────────────────────────────────────────────────
     if (contentMode === "books") {
       if (activeHousehold) {
+        const filteredHhBooks = filterBooks(householdBooks, true);
+        const hhBooksQuery = query.trim();
         return (
           <div style={s.page}>
             <div style={s.header}>
@@ -1139,27 +1248,61 @@ export default function RecipesView({
                 <p style={s.title}>{title}</p>
               </div>
               {renderModeToggle()}
+              <div style={s.searchRow}>
+                <input
+                  style={s.searchInput}
+                  type="search"
+                  placeholder={
+                    searchMode === "recipe"
+                      ? "Search by book name…"
+                      : "Search by recipe…"
+                  }
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <div style={s.searchToggleRow}>
+                  <div style={s.compactSeg}>
+                    <button
+                      style={s.compactSegBtn(searchMode === "recipe")}
+                      onClick={() => setSearchMode("recipe")}
+                    >
+                      Book
+                    </button>
+                    <button
+                      style={s.compactSegBtn(searchMode === "ingredient")}
+                      onClick={() => setSearchMode("ingredient")}
+                    >
+                      Recipe
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div style={s.body}>
-              {!householdBooksLoading && (
-                <button style={s.shareBtn} onClick={openSharePicker}>
-                  Share
-                </button>
-              )}
-              <div style={s.segmented}>
-                <button
-                  style={s.segBtn(groupView)}
-                  onClick={() => setGroupView(true)}
-                >
-                  Grouped
-                </button>
-                <button
-                  style={s.segBtn(!groupView)}
-                  onClick={() => setGroupView(false)}
-                >
-                  Mixed
-                </button>
-              </div>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#374151",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={groupView}
+                  onChange={(e) => setGroupView(e.target.checked)}
+                  style={{
+                    width: "18px",
+                    height: "18px",
+                    cursor: "pointer",
+                    accentColor: "var(--color-primary)",
+                  }}
+                />
+                Group by user
+              </label>
               {householdBooksLoading && (
                 <p
                   style={{
@@ -1171,16 +1314,23 @@ export default function RecipesView({
                   Loading…
                 </p>
               )}
-              {!householdBooksLoading && householdBooks.length === 0 && (
-                <p style={s.empty}>
-                  No books shared yet. Tap &quot;Share&quot; to add one.
-                </p>
-              )}
               {!householdBooksLoading &&
-                householdBooks.length > 0 &&
+                filteredHhBooks.length === 0 &&
+                !hhBooksQuery && (
+                  <p style={s.empty}>
+                    No books shared yet. Tap &quot;Share&quot; to add one.
+                  </p>
+                )}
+              {!householdBooksLoading &&
+                filteredHhBooks.length === 0 &&
+                hhBooksQuery && (
+                  <p style={s.empty}>{`No books match "${hhBooksQuery}".`}</p>
+                )}
+              {!householdBooksLoading &&
+                filteredHhBooks.length > 0 &&
                 (groupView
-                  ? renderGroupedBooks(householdBooks)
-                  : householdBooks.map((b) => (
+                  ? renderGroupedBooks(filteredHhBooks)
+                  : filteredHhBooks.map((b) => (
                       <BookCard key={b.id} book={b} sharedBy={b.shared_by} />
                     )))}
             </div>
@@ -1189,6 +1339,8 @@ export default function RecipesView({
       }
 
       // Personal books list
+      const filteredBooks = filterBooks(books, false);
+      const booksQuery = query.trim();
       return (
         <div style={s.page}>
           <div style={s.header}>
@@ -1196,13 +1348,37 @@ export default function RecipesView({
               <p style={s.title}>{title}</p>
             </div>
             {renderModeToggle()}
+            <div style={s.searchRow}>
+              <input
+                style={s.searchInput}
+                type="search"
+                placeholder={
+                  searchMode === "recipe"
+                    ? "Search by book name…"
+                    : "Search by recipe…"
+                }
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <div style={s.searchToggleRow}>
+                <div style={s.compactSeg}>
+                  <button
+                    style={s.compactSegBtn(searchMode === "recipe")}
+                    onClick={() => setSearchMode("recipe")}
+                  >
+                    Book
+                  </button>
+                  <button
+                    style={s.compactSegBtn(searchMode === "ingredient")}
+                    onClick={() => setSearchMode("ingredient")}
+                  >
+                    Recipe
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           <div style={s.body}>
-            {!booksLoading && (
-              <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
-                +
-              </button>
-            )}
             {booksLoading && (
               <p
                 style={{
@@ -1214,11 +1390,14 @@ export default function RecipesView({
                 Loading…
               </p>
             )}
-            {!booksLoading && books.length === 0 && (
+            {!booksLoading && filteredBooks.length === 0 && !booksQuery && (
               <p style={s.empty}>No books yet. Tap + to create one.</p>
             )}
+            {!booksLoading && filteredBooks.length === 0 && booksQuery && (
+              <p style={s.empty}>{`No books match "${booksQuery}".`}</p>
+            )}
             {!booksLoading &&
-              books.map((b) => (
+              filteredBooks.map((b) => (
                 <BookCard key={b.id} book={b} sharedBy={null} showEdit />
               ))}
           </div>
@@ -1245,51 +1424,51 @@ export default function RecipesView({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <div style={s.segmented}>
-              <button
-                style={s.segBtn(searchMode === "recipe")}
-                onClick={() => setSearchMode("recipe")}
-              >
-                Recipe
-              </button>
-              <button
-                style={s.segBtn(searchMode === "ingredient")}
-                onClick={() => setSearchMode("ingredient")}
-              >
-                Ingredient
-              </button>
+            <div style={s.searchToggleRow}>
+              <div style={s.compactSeg}>
+                <button
+                  style={s.compactSegBtn(searchMode === "recipe")}
+                  onClick={() => setSearchMode("recipe")}
+                >
+                  Recipe
+                </button>
+                <button
+                  style={s.compactSegBtn(searchMode === "ingredient")}
+                  onClick={() => setSearchMode("ingredient")}
+                >
+                  Ingredient
+                </button>
+              </div>
             </div>
           </div>
           {renderModeToggle()}
         </div>
         <div style={s.body}>
-          {!loading && (
-            <>
-              <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
-                +
-              </button>
-              {activeHousehold && (
-                <button style={s.shareBtn} onClick={openSharePicker}>
-                  Share
-                </button>
-              )}
-            </>
-          )}
           {activeHousehold && (
-            <div style={s.segmented}>
-              <button
-                style={s.segBtn(groupView)}
-                onClick={() => setGroupView(true)}
-              >
-                Grouped
-              </button>
-              <button
-                style={s.segBtn(!groupView)}
-                onClick={() => setGroupView(false)}
-              >
-                Mixed
-              </button>
-            </div>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "14px",
+                fontWeight: "600",
+                color: "#374151",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={groupView}
+                onChange={(e) => setGroupView(e.target.checked)}
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  cursor: "pointer",
+                  accentColor: "var(--color-primary)",
+                }}
+              />
+              Group by user
+            </label>
           )}
           {renderRecipesList()}
         </div>
@@ -1302,6 +1481,7 @@ export default function RecipesView({
   return (
     <>
       {getPageContent()}
+      {renderActionBar()}
 
       {/* "+" choice: New Recipe or New Book */}
       {showAddPicker && (
