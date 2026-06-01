@@ -1,10 +1,19 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import federation from "@originjs/vite-plugin-federation";
 
 export default defineConfig({
   plugins: [
     react(),
+    federation({
+      name: "nf4lm",
+      filename: "remoteEntry.js",
+      exposes: {
+        "./App": "./src/main.jsx",
+      },
+      shared: ["react", "react-dom"],
+    }),
     VitePWA({
       registerType: "autoUpdate",
       manifest: {

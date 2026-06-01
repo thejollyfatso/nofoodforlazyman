@@ -66,6 +66,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 2222
           script_stop: true
           script: |
             source ~/.nvm/nvm.sh
