@@ -108,6 +108,7 @@ def init_db():
                 substitutions    TEXT NOT NULL DEFAULT '[]',
                 substituted_with TEXT,
                 item_order       INTEGER NOT NULL DEFAULT 0,
+                item_type        TEXT NOT NULL DEFAULT 'item',
                 PRIMARY KEY (owner_type, owner_id, id)
             );
 
@@ -115,16 +116,17 @@ def init_db():
                 ON shopping_list_items (owner_type, owner_id);
 
             CREATE TABLE IF NOT EXISTS meal_plan (
-                id           TEXT PRIMARY KEY,
-                context_type TEXT NOT NULL CHECK (context_type IN ('personal', 'household')),
-                context_id   TEXT NOT NULL,
-                name         TEXT NOT NULL,
-                planned_date TEXT NOT NULL,
-                persistent   INTEGER NOT NULL DEFAULT 0,
-                created_by   TEXT NOT NULL REFERENCES users(id),
-                created_at   TEXT NOT NULL,
-                notes        TEXT,
-                color        TEXT
+                id            TEXT PRIMARY KEY,
+                context_type  TEXT NOT NULL CHECK (context_type IN ('personal', 'household')),
+                context_id    TEXT NOT NULL,
+                name          TEXT NOT NULL,
+                planned_date  TEXT NOT NULL,
+                persistent    INTEGER NOT NULL DEFAULT 0,
+                created_by    TEXT NOT NULL REFERENCES users(id),
+                created_at    TEXT NOT NULL,
+                notes         TEXT,
+                color         TEXT,
+                display_order INTEGER NOT NULL DEFAULT 0
             );
 
             CREATE TABLE IF NOT EXISTS meal_plan_recipes (
@@ -155,8 +157,18 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_meal_plan_bin_ctx
                 ON meal_plan_bin (context_type, context_id);
         """)
-        for col, definition in [("notes", "TEXT"), ("color", "TEXT")]:
+        for col, definition in [
+            ("notes", "TEXT"),
+            ("color", "TEXT"),
+            ("display_order", "INTEGER NOT NULL DEFAULT 0"),
+        ]:
             try:
                 conn.execute(f"ALTER TABLE meal_plan ADD COLUMN {col} {definition}")
             except Exception:
                 pass
+        try:
+            conn.execute(
+                "ALTER TABLE shopping_list_items ADD COLUMN item_type TEXT NOT NULL DEFAULT 'item'"
+            )
+        except Exception:
+            pass

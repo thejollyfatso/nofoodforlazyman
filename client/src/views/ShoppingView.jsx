@@ -59,9 +59,9 @@ const s = {
   addBar: {
     display: "flex",
     gap: "8px",
-    padding: "10px 16px",
+    padding: "10px 16px 6px",
     background: "#fff",
-    borderBottom: "1px solid var(--color-border)",
+    borderBottom: "none",
   },
   addInput: {
     flex: 1,
@@ -85,10 +85,26 @@ const s = {
     fontFamily: "inherit",
     flexShrink: 0,
   },
+  addDividerBar: {
+    padding: "4px 16px 10px",
+    background: "#fff",
+    borderBottom: "1px solid var(--color-border)",
+  },
+  addDividerBtn: {
+    padding: "5px 10px",
+    fontSize: "12px",
+    fontWeight: "600",
+    background: "none",
+    color: "#6b7280",
+    border: "1px dashed var(--color-border)",
+    borderRadius: "var(--radius-sm)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
   listBody: {
     flex: 1,
   },
-  divider: {
+  doneDivider: {
     display: "flex",
     alignItems: "center",
     padding: "10px 20px",
@@ -99,18 +115,95 @@ const s = {
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
-  dividerLine: {
+  doneDividerLine: {
     flex: 1,
     height: "1px",
     background: "var(--color-border)",
   },
-  itemRow: (checked) => ({
+  // User-created divider row
+  sectionDividerRow: (dragOver) => ({
+    display: "flex",
+    alignItems: "center",
+    padding: "6px 8px 6px 16px",
+    background: "#fff",
+    borderBottom: dragOver
+      ? "2px solid var(--color-primary)"
+      : "1px solid var(--color-border)",
+    gap: "8px",
+    cursor: "default",
+  }),
+  sectionDividerContent: {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    minWidth: 0,
+  },
+  sectionDividerLine: {
+    flex: 1,
+    height: "1px",
+    background: "var(--color-border)",
+  },
+  sectionDividerLabel: {
+    fontSize: "11px",
+    fontWeight: "700",
+    color: "#9ca3af",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    whiteSpace: "nowrap",
+    cursor: "pointer",
+    padding: "2px 0",
+  },
+  sectionDividerPlaceholder: {
+    fontSize: "11px",
+    color: "#d1d5db",
+    fontStyle: "italic",
+    cursor: "pointer",
+    padding: "2px 0",
+  },
+  sectionDividerInput: {
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "#6b7280",
+    border: "1.5px solid var(--color-primary)",
+    borderRadius: "4px",
+    padding: "2px 6px",
+    fontFamily: "inherit",
+    outline: "none",
+    width: "120px",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  },
+  sectionDividerRemove: {
+    background: "none",
+    border: "none",
+    padding: "4px 6px",
+    fontSize: "16px",
+    color: "#d1d5db",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    lineHeight: 1,
+    flexShrink: 0,
+  },
+  dragHandle: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "4px 6px",
+    cursor: "grab",
+    flexShrink: 0,
+    touchAction: "none",
+    color: "#d1d5db",
+  },
+  itemRow: (checked, dragOver, dragging) => ({
     display: "flex",
     alignItems: "flex-start",
-    padding: "12px 16px",
+    padding: "12px 8px 12px 16px",
     background: "#fff",
-    borderBottom: "1px solid var(--color-border)",
-    opacity: checked ? 0.55 : 1,
+    borderBottom: dragOver
+      ? "2px solid var(--color-primary)"
+      : "1px solid var(--color-border)",
+    opacity: dragging ? 0.4 : checked ? 0.55 : 1,
     gap: "12px",
   }),
   checkbox: (checked) => ({
@@ -342,6 +435,21 @@ const s = {
   },
 };
 
+// ── Drag handle SVG ───────────────────────────────────────────────────────────
+
+function DragHandleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+      <circle cx="5" cy="4" r="1.5" />
+      <circle cx="11" cy="4" r="1.5" />
+      <circle cx="5" cy="8" r="1.5" />
+      <circle cx="11" cy="8" r="1.5" />
+      <circle cx="5" cy="12" r="1.5" />
+      <circle cx="11" cy="12" r="1.5" />
+    </svg>
+  );
+}
+
 // ── Toast helper ──────────────────────────────────────────────────────────────
 
 function useToast() {
@@ -379,6 +487,7 @@ export default function ShoppingView({
     handleClearAll,
     handleAddManualItem,
     handleRemoveRecipe,
+    handleAddDivider,
   } = shopping;
 
   const isHousehold = shoppingContextType === "household";
@@ -413,6 +522,15 @@ export default function ShoppingView({
   const [removePrompt, setRemovePrompt] = useState(null);
   const [confirmRemove, setConfirmRemove] = useState(null);
   const { toast, showToast } = useToast();
+
+  // Divider editing state
+  const [editingDividerId, setEditingDividerId] = useState(null);
+  const [editingDividerVal, setEditingDividerVal] = useState("");
+
+  // Drag-and-drop state
+  const [draggingId, setDraggingId] = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
+  const canDragIdRef = useRef(null);
 
   function getMemberAlias(userId) {
     const m = members.find((m) => m.user_id === userId);
@@ -469,6 +587,90 @@ export default function ShoppingView({
     await handleClearAll();
   }
 
+  // Divider helpers
+  function startDividerEdit(item) {
+    setEditingDividerId(item.id);
+    setEditingDividerVal(item.name || "");
+  }
+
+  async function commitDividerEdit(itemId) {
+    const label = editingDividerVal.trim();
+    const newItems = items.map((i) =>
+      i.id === itemId
+        ? { ...i, name: label, normalized_name: label.toLowerCase() }
+        : i
+    );
+    setEditingDividerId(null);
+    setEditingDividerVal("");
+    await writeList(newItems);
+  }
+
+  function cancelDividerEdit() {
+    setEditingDividerId(null);
+    setEditingDividerVal("");
+  }
+
+  async function removeDivider(itemId) {
+    await writeList(items.filter((i) => i.id !== itemId));
+  }
+
+  // Drag-and-drop helpers
+  function handleDragStart(e, itemId) {
+    if (canDragIdRef.current !== itemId) {
+      e.preventDefault();
+      return;
+    }
+    setDraggingId(itemId);
+    e.dataTransfer.effectAllowed = "move";
+  }
+
+  function handleDragOver(e, itemId) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (itemId !== draggingId) setDragOverId(itemId);
+  }
+
+  function handleDrop(e, targetId) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggingId || draggingId === targetId) {
+      setDragOverId(null);
+      return;
+    }
+
+    const uncheckedItems = items.filter((i) => !i.checked);
+    const checkedItems = items.filter((i) => i.checked);
+
+    const fromIdx = uncheckedItems.findIndex((i) => i.id === draggingId);
+    const toIdx = uncheckedItems.findIndex((i) => i.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) {
+      setDragOverId(null);
+      setDraggingId(null);
+      canDragIdRef.current = null;
+      return;
+    }
+
+    const reordered = [...uncheckedItems];
+    const [removed] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, removed);
+
+    const allItems = [...reordered, ...checkedItems].map((item, idx) => ({
+      ...item,
+      item_order: idx,
+    }));
+
+    setDragOverId(null);
+    setDraggingId(null);
+    canDragIdRef.current = null;
+    writeList(allItems);
+  }
+
+  function handleDragEnd() {
+    setDraggingId(null);
+    setDragOverId(null);
+    canDragIdRef.current = null;
+  }
+
   // Recipe removal prompt resolution
   function resolveRemovePrompt(choice) {
     if (!removePrompt) return;
@@ -497,7 +699,7 @@ export default function ShoppingView({
     } else if (choice === "remove") {
       resolvedItems.splice(idx, 1);
     }
-    // "keep" → leave as-is (source_recipes already updated in removeRecipeFromList)
+    // "keep" → leave as-is
 
     advancePrompt(resolvedItems);
   }
@@ -505,22 +707,21 @@ export default function ShoppingView({
   function advancePrompt(updatedItems) {
     const { pendingItems, multiSourceItems, currentIndex, onWrite } =
       removePrompt || {};
-    const items = updatedItems ?? removePrompt?.pendingItems ?? [];
+    const itemsToUse = updatedItems ?? removePrompt?.pendingItems ?? [];
     const nextIndex = (currentIndex ?? 0) + 1;
 
     if (nextIndex >= (multiSourceItems?.length ?? 0)) {
       setRemovePrompt(null);
-      onWrite?.(items);
+      onWrite?.(itemsToUse);
     } else {
       setRemovePrompt((prev) => ({
         ...prev,
-        pendingItems: items,
+        pendingItems: itemsToUse,
         currentIndex: nextIndex,
       }));
     }
   }
 
-  // Called by handleRemoveRecipe when there are multi-source items
   function onNeedPrompt(multiSourceItems, newItems) {
     setRemovePrompt({
       pendingItems: newItems,
@@ -533,20 +734,110 @@ export default function ShoppingView({
   const unchecked = items.filter((i) => !i.checked);
   const checked = items.filter((i) => i.checked);
 
+  function renderDivider(item) {
+    const isEditing = editingDividerId === item.id;
+    const isDragOver = dragOverId === item.id && draggingId !== item.id;
+    const isDragging = draggingId === item.id;
+
+    return (
+      <div
+        key={item.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, item.id)}
+        onDragOver={(e) => handleDragOver(e, item.id)}
+        onDrop={(e) => handleDrop(e, item.id)}
+        onDragEnd={handleDragEnd}
+        style={{
+          ...s.sectionDividerRow(isDragOver),
+          opacity: isDragging ? 0.4 : 1,
+        }}
+      >
+        <div style={s.sectionDividerContent}>
+          <div style={s.sectionDividerLine} />
+          {isEditing ? (
+            <input
+              autoFocus
+              style={s.sectionDividerInput}
+              value={editingDividerVal}
+              onChange={(e) => setEditingDividerVal(e.target.value)}
+              onBlur={() => commitDividerEdit(item.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitDividerEdit(item.id);
+                if (e.key === "Escape") cancelDividerEdit();
+              }}
+              placeholder="Section label"
+              onPointerDown={(e) => e.stopPropagation()}
+            />
+          ) : item.name ? (
+            <span
+              style={s.sectionDividerLabel}
+              onClick={() => startDividerEdit(item)}
+            >
+              {item.name}
+            </span>
+          ) : (
+            <span
+              style={s.sectionDividerPlaceholder}
+              onClick={() => startDividerEdit(item)}
+            >
+              Add label
+            </span>
+          )}
+          <div style={s.sectionDividerLine} />
+        </div>
+
+        <button
+          style={s.sectionDividerRemove}
+          onClick={() => removeDivider(item.id)}
+          aria-label="Remove divider"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          ×
+        </button>
+
+        <div
+          style={s.dragHandle}
+          onPointerDown={(e) => {
+            canDragIdRef.current = item.id;
+          }}
+          onPointerUp={() => {
+            canDragIdRef.current = null;
+          }}
+          onPointerCancel={() => {
+            canDragIdRef.current = null;
+          }}
+        >
+          <DragHandleIcon />
+        </div>
+      </div>
+    );
+  }
+
   function renderItem(item) {
     const qtyStr = formatItemQty(item);
     const isEditing = editingQtyId === item.id;
+    const isDragOver = dragOverId === item.id && draggingId !== item.id;
+    const isDragging = draggingId === item.id;
 
     return (
-      <div key={item.id} style={s.itemRow(item.checked)}>
+      <div
+        key={item.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, item.id)}
+        onDragOver={(e) => handleDragOver(e, item.id)}
+        onDrop={(e) => handleDrop(e, item.id)}
+        onDragEnd={handleDragEnd}
+        style={s.itemRow(item.checked, isDragOver, isDragging)}
+      >
         <div
           style={s.checkbox(item.checked)}
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={() => handleCheckItem(item.id, !item.checked)}
         >
           {item.checked && <span style={s.checkmark}>✓</span>}
         </div>
 
-        <div style={s.itemContent}>
+        <div style={s.itemContent} onPointerDown={(e) => e.stopPropagation()}>
           <div style={s.itemMain}>
             {isEditing ? (
               <input
@@ -577,7 +868,7 @@ export default function ShoppingView({
             {item.optional && !item.substituted_with && (
               <span style={s.badge}>optional</span>
             )}
-            {item.secret && <span style={s.secretBadge}>🔒 secret</span>}
+            {item.secret && <span style={s.secretBadge}>secret</span>}
             {item.substituted_with && (
               <span style={s.usingPill}>using: {item.substituted_with}</span>
             )}
@@ -634,12 +925,28 @@ export default function ShoppingView({
         {item.substitutions.length > 0 && (
           <button
             style={s.subChevron}
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => setSubModalItem(item)}
             aria-label="View substitutions"
           >
             ›
           </button>
         )}
+
+        <div
+          style={s.dragHandle}
+          onPointerDown={(e) => {
+            canDragIdRef.current = item.id;
+          }}
+          onPointerUp={() => {
+            canDragIdRef.current = null;
+          }}
+          onPointerCancel={() => {
+            canDragIdRef.current = null;
+          }}
+        >
+          <DragHandleIcon />
+        </div>
       </div>
     );
   }
@@ -677,6 +984,11 @@ export default function ShoppingView({
           Add
         </button>
       </div>
+      <div style={s.addDividerBar}>
+        <button style={s.addDividerBtn} onClick={handleAddDivider}>
+          + Add section divider
+        </button>
+      </div>
 
       {/* List */}
       <div style={s.listBody}>
@@ -702,13 +1014,15 @@ export default function ShoppingView({
           </div>
         )}
 
-        {unchecked.map(renderItem)}
+        {unchecked.map((item) =>
+          item.item_type === "divider" ? renderDivider(item) : renderItem(item)
+        )}
 
         {hasDoneItems && (
-          <div style={s.divider}>
-            <span style={s.dividerLine} />
+          <div style={s.doneDivider}>
+            <span style={s.doneDividerLine} />
             <span>Done</span>
-            <span style={s.dividerLine} />
+            <span style={s.doneDividerLine} />
           </div>
         )}
 
@@ -720,7 +1034,9 @@ export default function ShoppingView({
         <button
           style={s.copyBtn}
           onClick={() => {
-            const undone = items.filter((i) => !i.checked);
+            const undone = items.filter(
+              (i) => !i.checked && i.item_type !== "divider"
+            );
             if (!undone.length) {
               showToast("Nothing to copy");
               return;
@@ -734,7 +1050,9 @@ export default function ShoppingView({
         <button
           style={s.copyBtn}
           onClick={() => {
-            const undone = items.filter((i) => !i.checked);
+            const undone = items.filter(
+              (i) => !i.checked && i.item_type !== "divider"
+            );
             if (!undone.length) {
               showToast("Nothing to copy");
               return;

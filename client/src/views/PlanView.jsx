@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../utils/apiFetch";
 import { formatQty } from "../utils/formatQty";
 import { removeRecipeFromList, subtractQty } from "../state/useShoppingList";
@@ -92,15 +92,18 @@ const s = {
   weekGrid: {
     padding: "0 16px",
   },
-  dayRow: {
+  dayRow: (dragOver) => ({
     borderBottom: "1px solid var(--color-border)",
     padding: "12px 0",
-  },
+    background: dragOver ? "var(--color-primary-light)" : "transparent",
+    transition: "background 0.1s",
+  }),
   dayHeader: {
     display: "flex",
     alignItems: "baseline",
     gap: "6px",
     marginBottom: "6px",
+    cursor: "pointer",
   },
   dayName: (isToday) => ({
     fontSize: "12px",
@@ -114,16 +117,18 @@ const s = {
     fontWeight: isToday ? "700" : "400",
     color: isToday ? "var(--color-primary)" : "#374151",
   }),
-  mealCard: (color) => ({
+  mealCard: (color, dragging) => ({
     background: color || "#fff",
     border: "1.5px solid var(--color-border)",
     borderRadius: "var(--radius-sm)",
     padding: "8px 12px",
     marginBottom: "6px",
-    cursor: "pointer",
+    cursor: "grab",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+    opacity: dragging ? 0.4 : 1,
+    userSelect: "none",
   }),
   mealCardNotes: {
     fontSize: "11px",
@@ -181,6 +186,7 @@ const s = {
     maxHeight: "92dvh",
     overflowY: "auto",
     padding: "20px 20px 36px",
+    willChange: "transform",
   },
   sheetHandle: {
     width: "36px",
@@ -188,6 +194,8 @@ const s = {
     background: "#e5e0d8",
     borderRadius: "2px",
     margin: "0 auto 16px",
+    cursor: "grab",
+    touchAction: "none",
   },
   sheetTitle: {
     fontSize: "17px",
@@ -892,6 +900,21 @@ export default function PlanView({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
+  // Meal drag-and-drop state
+  const [draggingMealId, setDraggingMealId] = useState(null);
+  const [dragOverDate, setDragOverDate] = useState(null);
+  const [dragOverMealId, setDragOverMealId] = useState(null);
+  const mealDragRef = useRef(null);
+
+  // Sheet drag-to-dismiss
+  const sheetRef = useRef(null);
+  const dismissRef = useRef({
+    tracking: false,
+    startY: 0,
+    translateY: 0,
+    onClose: null,
+  });
+
   useEffect(() => {
     if (!isHousehold || !activeHousehold) return;
     apiFetch(`/households/${activeHousehold.id}`)
@@ -1052,6 +1075,12 @@ export default function PlanView({
     setSaveError(null);
   }
 
+  function openNewOnDate(day) {
+    const form = initEmptyForm();
+    form.date = dateStr(day);
+    setCreateForm(form);
+  }
+
   function setEditField(field, value) {
     setEditForm((f) => ({ ...f, [field]: value }));
   }
@@ -1148,6 +1177,161 @@ export default function PlanView({
     }
   }
 
+  // ── Drag-to-dismiss sheet ────────────────────────────────────────────────────
+
+  function makeDismissHandlers(onClose) {
+    return {
+      onPointerDown(e) {
+        e.preventDefault();
+        dismissRef.current = {
+          tracking: true,
+          startY: e.clientY,
+          translateY: 0,
+          onClose,
+        };
+        e.currentTarget.setPointerCapture(e.pointerId);
+      },
+      onPointerMove(e) {
+        if (!dismissRef.current.tracking) return;
+        const deltaY = Math.max(0, e.clientY - dismissRef.current.startY);
+        dismissRef.current.translateY = deltaY;
+        if (sheetRef.current) {
+          sheetRef.current.style.transition = "none";
+          sheetRef.current.style.transform = `translateY(${deltaY}px)`;
+        }
+      },
+      onPointerUp() {
+        if (!dismissRef.current.tracking) return;
+        dismissRef.current.tracking = false;
+        const { translateY, onClose: close } = dismissRef.current;
+        if (translateY > 150) {
+          if (sheetRef.current) sheetRef.current.style.transform = "";
+          close();
+        } else if (sheetRef.current) {
+          sheetRef.current.style.transition = "transform 0.25s ease";
+          sheetRef.current.style.transform = "translateY(0)";
+        }
+      },
+      onPointerCancel() {
+        dismissRef.current.tracking = false;
+        if (sheetRef.current) {
+          sheetRef.current.style.transition = "transform 0.25s ease";
+          sheetRef.current.style.transform = "translateY(0)";
+        }
+      },
+    };
+  }
+
+  // ── Meal drag-and-drop ───────────────────────────────────────────────────────
+
+  const mealPlanBase =
+    isHousehold && activeHousehold
+      ? `/households/${activeHousehold.id}/meal-plan`
+      : "/meal-plan";
+
+  function handleMealDragStart(e, meal) {
+    mealDragRef.current = { id: meal.id, planned_date: meal.planned_date };
+    setDraggingMealId(meal.id);
+    e.dataTransfer.effectAllowed = "move";
+    e.stopPropagation();
+  }
+
+  function handleMealDragOver(e, mealId, day) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverDate(dateStr(day));
+    setDragOverMealId(mealId);
+  }
+
+  function handleDayDragOver(e, day) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverDate(dateStr(day));
+  }
+
+  function handleDayDragLeave(e) {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverDate(null);
+      setDragOverMealId(null);
+    }
+  }
+
+  async function handleDayDrop(e, day) {
+    e.preventDefault();
+    if (!mealDragRef.current) return;
+
+    const { id: draggedId, planned_date: fromDate } = mealDragRef.current;
+    const targetDate = dateStr(day);
+    const draggedMeal = meals.find((m) => m.id === draggedId);
+    if (!draggedMeal) {
+      setDraggingMealId(null);
+      setDragOverDate(null);
+      setDragOverMealId(null);
+      mealDragRef.current = null;
+      return;
+    }
+
+    const sorted = (date) =>
+      meals
+        .filter((m) => m.planned_date === date && m.id !== draggedId)
+        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+    const targetMeals = sorted(targetDate);
+    const insertBefore = dragOverMealId
+      ? targetMeals.findIndex((m) => m.id === dragOverMealId)
+      : -1;
+    const insertIdx = insertBefore === -1 ? targetMeals.length : insertBefore;
+
+    const newTargetOrder = [
+      ...targetMeals.slice(0, insertIdx),
+      draggedMeal,
+      ...targetMeals.slice(insertIdx),
+    ];
+
+    const patches = [];
+    newTargetOrder.forEach((meal, idx) => {
+      const changes = {};
+      if ((meal.display_order ?? 0) !== idx) changes.display_order = idx;
+      if (meal.id === draggedId && fromDate !== targetDate)
+        changes.planned_date = targetDate;
+      if (Object.keys(changes).length > 0)
+        patches.push({ id: meal.id, body: changes });
+    });
+
+    if (fromDate !== targetDate) {
+      const sourceMeals = sorted(fromDate);
+      sourceMeals.forEach((meal, idx) => {
+        if ((meal.display_order ?? 0) !== idx)
+          patches.push({ id: meal.id, body: { display_order: idx } });
+      });
+    }
+
+    setDraggingMealId(null);
+    setDragOverDate(null);
+    setDragOverMealId(null);
+    mealDragRef.current = null;
+
+    if (patches.length > 0) {
+      await Promise.all(
+        patches.map(({ id, body }) =>
+          apiFetch(`${mealPlanBase}/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(body),
+          })
+        )
+      );
+      await mealPlan.fetchMeals();
+    }
+  }
+
+  function handleMealDragEnd() {
+    setDraggingMealId(null);
+    setDragOverDate(null);
+    setDragOverMealId(null);
+    mealDragRef.current = null;
+  }
+
   // ── Calendar helpers ─────────────────────────────────────────────────────────
 
   const today = new Date();
@@ -1163,7 +1347,9 @@ export default function PlanView({
 
   function mealsOnDate(d) {
     const ds = dateStr(d);
-    return meals.filter((m) => m.planned_date === ds);
+    return meals
+      .filter((m) => m.planned_date === ds)
+      .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
   }
 
   // ── Render helpers ───────────────────────────────────────────────────────────
@@ -1321,12 +1507,12 @@ export default function PlanView({
         <div style={s.colorRow}>
           {[
             "",
+            "#FECACA",
+            "#FED7AA",
             "#FDE68A",
             "#BBF7D0",
             "#BAE6FD",
             "#DDD6FE",
-            "#FECACA",
-            "#FED7AA",
             "#F9A8D4",
           ].map((hex) => (
             <button
@@ -1431,9 +1617,20 @@ export default function PlanView({
           const ds = dateStr(day);
           const isToday = ds === todayDateStr;
           const dayMeals = mealsOnDate(day);
+          const isDragOver = dragOverDate === ds;
           return (
-            <div key={ds} style={s.dayRow}>
-              <div style={s.dayHeader}>
+            <div
+              key={ds}
+              style={s.dayRow(isDragOver)}
+              onDragOver={(e) => handleDayDragOver(e, day)}
+              onDragLeave={handleDayDragLeave}
+              onDrop={(e) => handleDayDrop(e, day)}
+            >
+              <div
+                style={s.dayHeader}
+                onClick={() => openNewOnDate(day)}
+                title="Add meal on this day"
+              >
                 <span style={s.dayName(isToday)}>
                   {DAY_NAMES[day.getDay()]}
                 </span>
@@ -1447,7 +1644,11 @@ export default function PlanView({
                 dayMeals.map((meal) => (
                   <div
                     key={meal.id}
-                    style={s.mealCard(meal.color)}
+                    draggable
+                    style={s.mealCard(meal.color, draggingMealId === meal.id)}
+                    onDragStart={(e) => handleMealDragStart(e, meal)}
+                    onDragOver={(e) => handleMealDragOver(e, meal.id, day)}
+                    onDragEnd={handleMealDragEnd}
                     onClick={() => openEdit(meal)}
                   >
                     <div style={s.mealCardLeft}>
@@ -1492,8 +1693,12 @@ export default function PlanView({
       {/* ── Create meal modal ──────────────────────────────────────────────── */}
       {createForm && !ingStep && (
         <div style={s.backdrop} onClick={closeCreate}>
-          <div style={s.sheet} onClick={(e) => e.stopPropagation()}>
-            <div style={s.sheetHandle} />
+          <div
+            ref={sheetRef}
+            style={s.sheet}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={s.sheetHandle} {...makeDismissHandlers(closeCreate)} />
             <p style={s.sheetTitle}>Plan a meal</p>
             {renderFormBody(createForm, "create")}
             <button
@@ -1525,8 +1730,12 @@ export default function PlanView({
       {/* ── Edit meal modal ────────────────────────────────────────────────── */}
       {editForm && editMeal && !ingStep && (
         <div style={s.backdrop} onClick={closeEdit}>
-          <div style={s.sheet} onClick={(e) => e.stopPropagation()}>
-            <div style={s.sheetHandle} />
+          <div
+            ref={sheetRef}
+            style={s.sheet}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={s.sheetHandle} {...makeDismissHandlers(closeEdit)} />
             <p style={s.sheetTitle}>Edit meal</p>
             {renderFormBody(editForm, "edit")}
             <button

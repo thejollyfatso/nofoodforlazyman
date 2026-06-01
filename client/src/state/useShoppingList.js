@@ -456,6 +456,26 @@ export function useShoppingList({ contextType, ownerId }, token) {
     await writeList(newItems);
   }
 
+  async function handleAddDivider() {
+    const newDivider = {
+      id: crypto.randomUUID(),
+      name: "",
+      normalized_name: "",
+      quantities: [],
+      checked: false,
+      checked_by: null,
+      source_recipes: [],
+      optional: false,
+      secret: false,
+      assigned_to: [],
+      substitutions: [],
+      substituted_with: null,
+      item_type: "divider",
+      item_order: items.length,
+    };
+    await writeList([...items, newDivider]);
+  }
+
   return {
     items,
     loading,
@@ -473,5 +493,6 @@ export function useShoppingList({ contextType, ownerId }, token) {
     handleClearDone,
     handleClearAll,
     handleAssignItem,
+    handleAddDivider,
   };
 }

@@ -22,6 +22,7 @@ class CreateMealBody(BaseModel):
     persistent: bool = False
     notes: Optional[str] = None
     color: Optional[str] = None
+    display_order: int = 0
 
 
 class UpdateMealBody(BaseModel):
@@ -32,6 +33,7 @@ class UpdateMealBody(BaseModel):
     persistent: Optional[bool] = None
     notes: Optional[str] = None
     color: Optional[str] = None
+    display_order: Optional[int] = None
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -91,6 +93,7 @@ def _build_meal(conn, row) -> dict:
         "created_at": row["created_at"],
         "notes": row["notes"],
         "color": row["color"],
+        "display_order": row["display_order"] if "display_order" in row.keys() else 0,
         "recipes": [
             {
                 "id": r["id"],
@@ -136,7 +139,7 @@ def _get_meals(conn, context_type: str, context_id: str, start: str, end: str) -
         "SELECT * FROM meal_plan"
         " WHERE context_type=? AND context_id=?"
         " AND planned_date >= ? AND planned_date <= ?"
-        " ORDER BY planned_date ASC, created_at ASC",
+        " ORDER BY planned_date ASC, display_order ASC, created_at ASC",
         (context_type, context_id, start, end),
     ).fetchall()
     return [_build_meal(conn, r) for r in rows]
@@ -149,14 +152,15 @@ def _create_meal(
     now = _now_iso()
     conn.execute(
         "INSERT INTO meal_plan"
-        " (id, context_type, context_id, name, planned_date, persistent, created_by, created_at, notes, color)"
-        " VALUES (?,?,?,?,?,?,?,?,?,?)",
+        " (id, context_type, context_id, name, planned_date, persistent, created_by, created_at, notes, color, display_order)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
         (
             meal_id, context_type, context_id,
             body.name, body.planned_date,
             1 if body.persistent else 0,
             user_id, now,
             body.notes, body.color,
+            body.display_order,
         ),
     )
     for recipe_id in body.recipe_ids:
@@ -199,6 +203,9 @@ def _update_meal(conn, meal_id: str, context_type: str, context_id: str, body: U
     if body.color is not None:
         updates.append("color=?")
         values.append(body.color)
+    if body.display_order is not None:
+        updates.append("display_order=?")
+        values.append(body.display_order)
 
     if updates:
         values.append(meal_id)

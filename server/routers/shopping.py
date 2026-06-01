@@ -40,6 +40,7 @@ class ShoppingItem(BaseModel):
     substitutions: List[SubEntry] = []
     substituted_with: Optional[str] = None
     item_order: int = 0
+    item_type: str = "item"
 
 
 class ShoppingWriteBody(BaseModel):
@@ -69,6 +70,7 @@ def _row_to_item(row) -> dict:
         "substitutions": json.loads(row["substitutions"]),
         "substituted_with": row["substituted_with"],
         "item_order": row["item_order"],
+        "item_type": row["item_type"] if "item_type" in row.keys() else "item",
     }
 
 
@@ -156,8 +158,8 @@ def _write_items(conn, owner_type: str, owner_id: str, items: List[ShoppingItem]
             """INSERT INTO shopping_list_items
                (id, owner_type, owner_id, name, normalized_name, quantities,
                 checked, checked_by, source_recipes, optional, secret,
-                assigned_to, substitutions, substituted_with, item_order)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                assigned_to, substitutions, substituted_with, item_order, item_type)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 item.id,
                 owner_type,
@@ -174,6 +176,7 @@ def _write_items(conn, owner_type: str, owner_id: str, items: List[ShoppingItem]
                 json.dumps([s.model_dump() for s in item.substitutions]),
                 item.substituted_with,
                 item.item_order,
+                item.item_type,
             ),
         )
 
