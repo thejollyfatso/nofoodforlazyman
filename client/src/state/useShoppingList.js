@@ -145,6 +145,11 @@ function findMatch(items, normalizedName) {
   return null;
 }
 
+// Sentinel value used to represent an originally-unmeasured ("~") quantity when
+// a real quantity is later merged in. unit:"~" is not a real measurement unit so
+// it never collides with ingredient units in matching or subtraction.
+const QTY_UNKNOWN_SENTINEL = { qty: "", unit: "~" };
+
 function mergeQuantities(existing, newQty, newUnit) {
   if (!newQty && !newUnit) return existing;
   // Handle range quantities: take upper bound (e.g. "1-2" → "2", "1 to 2" → "2")
@@ -152,13 +157,20 @@ function mergeQuantities(existing, newQty, newUnit) {
   const rangeMatch = qty.match(/(\d+(?:\.\d+)?)\s*(?:to|-)\s*(\d+(?:\.\d+)?)/);
   if (rangeMatch) qty = rangeMatch[2];
   const unit = newUnit || "";
-  // Same unit (normalized) → sum quantities numerically
-  const idx = existing.findIndex((e) => unitsMatch(e.unit, unit));
+  // Skip the sentinel when matching — it is never a numeric quantity
+  const idx = existing.findIndex(
+    (e) => e.unit !== "~" && unitsMatch(e.unit, unit)
+  );
   if (idx !== -1) {
     const sum = parseNum(existing[idx].qty) + parseNum(qty);
     return existing.map((e, i) =>
       i === idx ? { qty: formatNum(sum), unit: e.unit } : e
     );
+  }
+  // When adding to a previously unmeasured item, preserve the "~" alongside
+  // the new quantity so both are shown (e.g. "~ + 2 cups").
+  if (existing.length === 0) {
+    return [QTY_UNKNOWN_SENTINEL, { qty, unit }];
   }
   return [...existing, { qty, unit }];
 }

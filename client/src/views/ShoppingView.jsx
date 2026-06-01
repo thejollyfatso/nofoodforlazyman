@@ -560,6 +560,7 @@ export default function ShoppingView({
     if (!item.quantities.length) return "~";
     return item.quantities
       .map((q) => {
+        if (q.unit === "~") return "~";
         const formatted = formatQty(q.qty);
         return q.unit ? `${formatted} ${q.unit}` : formatted;
       })
@@ -582,7 +583,10 @@ export default function ShoppingView({
   function startQtyEdit(item) {
     if (item.checked) return;
     setEditingQtyId(item.id);
+    // Exclude the "~" sentinel so the edit field shows only the measurable portion.
+    // Saving fully replaces quantities (sentinel and all) with the new value.
     const raw = item.quantities
+      .filter((q) => q.unit !== "~")
       .map((q) => (q.unit ? `${q.qty} ${q.unit}` : q.qty))
       .join(" + ");
     setEditingQtyVal(raw);
