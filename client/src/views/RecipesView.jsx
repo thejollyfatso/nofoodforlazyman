@@ -55,7 +55,7 @@ const s = {
   searchRow: {
     display: "flex",
     flexDirection: "column",
-    gap: "8px",
+    gap: "0",
     marginBottom: "4px",
   },
   searchInput: {
@@ -133,7 +133,6 @@ const s = {
   searchToggleRow: {
     display: "flex",
     justifyContent: "flex-end",
-    marginTop: "2px",
   },
   compactSeg: {
     display: "flex",
@@ -1035,7 +1034,6 @@ export default function RecipesView({
 
     if (contentMode === "books") {
       if (activeHousehold) {
-        if (householdBooksLoading) return null;
         return (
           <div style={s.actionBar}>
             <button style={s.shareBtn} onClick={openSharePicker}>
@@ -1044,7 +1042,6 @@ export default function RecipesView({
           </div>
         );
       }
-      if (booksLoading) return null;
       return (
         <div style={s.actionBar}>
           <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
@@ -1283,6 +1280,7 @@ export default function RecipesView({
                 style={{
                   display: "flex",
                   alignItems: "center",
+                  justifyContent: "flex-end",
                   gap: "8px",
                   fontSize: "14px",
                   fontWeight: "600",
@@ -1412,6 +1410,7 @@ export default function RecipesView({
           <div style={s.titleRow}>
             <p style={s.title}>{title}</p>
           </div>
+          {renderModeToggle()}
           <div style={s.searchRow}>
             <input
               style={s.searchInput}
@@ -1441,7 +1440,6 @@ export default function RecipesView({
               </div>
             </div>
           </div>
-          {renderModeToggle()}
         </div>
         <div style={s.body}>
           {activeHousehold && (
