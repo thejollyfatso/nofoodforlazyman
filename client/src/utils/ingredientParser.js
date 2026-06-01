@@ -272,6 +272,16 @@ export function parseIngredientLine(rawLine) {
   return result;
 }
 
+// Extract only qty + unit from a bare quantity string (no ingredient name required).
+// Used by the shopping list qty edit field.
+export function parseQtyUnit(text) {
+  if (!text?.trim()) return { qty: "", unit: "" };
+  let s = replaceUnicodeFracs(text.trim());
+  const [qty, rest] = extractQty(s);
+  const [unit] = extractUnit(rest.trim());
+  return { qty, unit };
+}
+
 export function parseIngredients(text) {
   if (!text?.trim()) return [];
   return text

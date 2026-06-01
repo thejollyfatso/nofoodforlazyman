@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../utils/apiFetch";
 import { normalizeIngredientName } from "../utils/normalizeIngredientName";
 import { levenshtein } from "../utils/levenshtein";
-import { parseIngredientLine } from "../utils/ingredientParser";
+import { parseIngredientLine, parseQtyUnit } from "../utils/ingredientParser";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
@@ -180,7 +180,11 @@ export function mergeIngredientsIntoList(existingItems, recipe, ingredients) {
   for (const ing of ingredients) {
     if (!ing.name?.trim()) continue;
     const norm = normalizeIngredientName(ing.name);
-    const match = findMatch(items, norm);
+    // Only merge into unchecked items; checked (done) items must not absorb new additions
+    const match = findMatch(
+      items.filter((i) => !i.checked),
+      norm
+    );
 
     if (match) {
       const idx = items.findIndex((i) => i.id === match.id);
@@ -427,11 +431,8 @@ export function useShoppingList({ contextType, ownerId }, token) {
   }
 
   async function handleEditQty(itemId, newQtyStr) {
-    const parsed = parseIngredientLine(newQtyStr);
-    const quantities =
-      parsed?.qty || parsed?.unit
-        ? [{ qty: parsed?.qty || "", unit: parsed?.unit || "" }]
-        : [];
+    const { qty, unit } = parseQtyUnit(newQtyStr);
+    const quantities = qty || unit ? [{ qty, unit }] : [];
     const newItems = items.map((i) =>
       i.id === itemId ? { ...i, quantities } : i
     );
