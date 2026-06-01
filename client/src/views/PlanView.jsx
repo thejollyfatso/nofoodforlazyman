@@ -904,7 +904,8 @@ export default function PlanView({
   const [draggingMealId, setDraggingMealId] = useState(null);
   const [dragOverDate, setDragOverDate] = useState(null);
   const [dragOverMealId, setDragOverMealId] = useState(null);
-  const mealDragRef = useRef(null);
+  const mealDragRef = useRef(null); // { id, planned_date, startX, startY, started }
+  const suppressMealClickRef = useRef(false);
 
   // Sheet drag-to-dismiss
   const sheetRef = useRef(null);
@@ -1222,55 +1223,79 @@ export default function PlanView({
     };
   }
 
-  // ── Meal drag-and-drop ───────────────────────────────────────────────────────
+  // ── Meal drag-and-drop (pointer events — works on iOS + desktop) ─────────────
 
   const mealPlanBase =
     isHousehold && activeHousehold
       ? `/households/${activeHousehold.id}/meal-plan`
       : "/meal-plan";
 
-  function handleMealDragStart(e, meal) {
-    mealDragRef.current = { id: meal.id, planned_date: meal.planned_date };
-    setDraggingMealId(meal.id);
-    e.dataTransfer.effectAllowed = "move";
-    e.stopPropagation();
+  function onMealPointerDown(e, meal) {
+    mealDragRef.current = {
+      id: meal.id,
+      planned_date: meal.planned_date,
+      startX: e.clientX,
+      startY: e.clientY,
+      started: false,
+    };
+    suppressMealClickRef.current = false;
+    e.currentTarget.setPointerCapture(e.pointerId);
   }
 
-  function handleMealDragOver(e, mealId, day) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverDate(dateStr(day));
-    setDragOverMealId(mealId);
-  }
+  function onMealPointerMove(e) {
+    const state = mealDragRef.current;
+    if (!state) return;
 
-  function handleDayDragOver(e, day) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverDate(dateStr(day));
-  }
+    const dx = Math.abs(e.clientX - state.startX);
+    const dy = Math.abs(e.clientY - state.startY);
 
-  function handleDayDragLeave(e) {
-    if (!e.currentTarget.contains(e.relatedTarget)) {
-      setDragOverDate(null);
-      setDragOverMealId(null);
+    if (!state.started && dx < 8 && dy < 8) return;
+
+    if (!state.started) {
+      state.started = true;
+      setDraggingMealId(state.id);
     }
+
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const dayEl = el?.closest("[data-day]");
+    const mealEl = el?.closest("[data-meal-id]");
+
+    setDragOverDate(dayEl?.dataset?.day ?? null);
+    const hoveredMealId = mealEl?.dataset?.mealId;
+    setDragOverMealId(
+      hoveredMealId && hoveredMealId !== state.id ? hoveredMealId : null
+    );
   }
 
-  async function handleDayDrop(e, day) {
-    e.preventDefault();
-    if (!mealDragRef.current) return;
+  async function onMealPointerUp(e) {
+    const state = mealDragRef.current;
+    if (!state) return;
 
-    const { id: draggedId, planned_date: fromDate } = mealDragRef.current;
-    const targetDate = dateStr(day);
-    const draggedMeal = meals.find((m) => m.id === draggedId);
-    if (!draggedMeal) {
-      setDraggingMealId(null);
+    const didDrag = state.started;
+    const draggedId = state.id;
+    const fromDate = state.planned_date;
+
+    mealDragRef.current = null;
+    setDraggingMealId(null);
+
+    if (!didDrag) {
       setDragOverDate(null);
       setDragOverMealId(null);
-      mealDragRef.current = null;
       return;
     }
+
+    suppressMealClickRef.current = true;
+
+    const targetDate = dragOverDate;
+    const overMealId = dragOverMealId;
+
+    setDragOverDate(null);
+    setDragOverMealId(null);
+
+    if (!targetDate) return;
+
+    const draggedMeal = meals.find((m) => m.id === draggedId);
+    if (!draggedMeal) return;
 
     const sorted = (date) =>
       meals
@@ -1278,8 +1303,8 @@ export default function PlanView({
         .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
 
     const targetMeals = sorted(targetDate);
-    const insertBefore = dragOverMealId
-      ? targetMeals.findIndex((m) => m.id === dragOverMealId)
+    const insertBefore = overMealId
+      ? targetMeals.findIndex((m) => m.id === overMealId)
       : -1;
     const insertIdx = insertBefore === -1 ? targetMeals.length : insertBefore;
 
@@ -1300,17 +1325,11 @@ export default function PlanView({
     });
 
     if (fromDate !== targetDate) {
-      const sourceMeals = sorted(fromDate);
-      sourceMeals.forEach((meal, idx) => {
+      sorted(fromDate).forEach((meal, idx) => {
         if ((meal.display_order ?? 0) !== idx)
           patches.push({ id: meal.id, body: { display_order: idx } });
       });
     }
-
-    setDraggingMealId(null);
-    setDragOverDate(null);
-    setDragOverMealId(null);
-    mealDragRef.current = null;
 
     if (patches.length > 0) {
       await Promise.all(
@@ -1325,11 +1344,11 @@ export default function PlanView({
     }
   }
 
-  function handleMealDragEnd() {
+  function onMealPointerCancel() {
+    mealDragRef.current = null;
     setDraggingMealId(null);
     setDragOverDate(null);
     setDragOverMealId(null);
-    mealDragRef.current = null;
   }
 
   // ── Calendar helpers ─────────────────────────────────────────────────────────
@@ -1619,13 +1638,7 @@ export default function PlanView({
           const dayMeals = mealsOnDate(day);
           const isDragOver = dragOverDate === ds;
           return (
-            <div
-              key={ds}
-              style={s.dayRow(isDragOver)}
-              onDragOver={(e) => handleDayDragOver(e, day)}
-              onDragLeave={handleDayDragLeave}
-              onDrop={(e) => handleDayDrop(e, day)}
-            >
+            <div key={ds} data-day={ds} style={s.dayRow(isDragOver)}>
               <div
                 style={s.dayHeader}
                 onClick={() => openNewOnDate(day)}
@@ -1644,12 +1657,24 @@ export default function PlanView({
                 dayMeals.map((meal) => (
                   <div
                     key={meal.id}
-                    draggable
-                    style={s.mealCard(meal.color, draggingMealId === meal.id)}
-                    onDragStart={(e) => handleMealDragStart(e, meal)}
-                    onDragOver={(e) => handleMealDragOver(e, meal.id, day)}
-                    onDragEnd={handleMealDragEnd}
-                    onClick={() => openEdit(meal)}
+                    data-meal-id={meal.id}
+                    style={{
+                      ...s.mealCard(meal.color, draggingMealId === meal.id),
+                      touchAction: "none",
+                      pointerEvents:
+                        draggingMealId === meal.id ? "none" : undefined,
+                    }}
+                    onPointerDown={(e) => onMealPointerDown(e, meal)}
+                    onPointerMove={onMealPointerMove}
+                    onPointerUp={onMealPointerUp}
+                    onPointerCancel={onMealPointerCancel}
+                    onClick={() => {
+                      if (suppressMealClickRef.current) {
+                        suppressMealClickRef.current = false;
+                        return;
+                      }
+                      openEdit(meal);
+                    }}
                   >
                     <div style={s.mealCardLeft}>
                       <p style={s.mealCardName}>{meal.name}</p>

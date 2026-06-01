@@ -530,7 +530,7 @@ export default function ShoppingView({
   // Drag-and-drop state
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
-  const canDragIdRef = useRef(null);
+  const dragStateRef = useRef(null); // { id, overTargetId }
 
   function getMemberAlias(userId) {
     const m = members.find((m) => m.user_id === userId);
@@ -614,61 +614,54 @@ export default function ShoppingView({
     await writeList(items.filter((i) => i.id !== itemId));
   }
 
-  // Drag-and-drop helpers
-  function handleDragStart(e, itemId) {
-    if (canDragIdRef.current !== itemId) {
-      e.preventDefault();
-      return;
-    }
+  // Pointer-based drag-and-drop (works on iOS + desktop)
+  function onHandlePointerDown(e, itemId) {
+    e.preventDefault();
+    dragStateRef.current = { id: itemId, overTargetId: null };
     setDraggingId(itemId);
-    e.dataTransfer.effectAllowed = "move";
+    e.currentTarget.setPointerCapture(e.pointerId);
   }
 
-  function handleDragOver(e, itemId) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (itemId !== draggingId) setDragOverId(itemId);
+  function onHandlePointerMove(e) {
+    if (!dragStateRef.current) return;
+    const { id: draggedId } = dragStateRef.current;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const row = el?.closest("[data-item-id]");
+    const targetId = row?.dataset?.itemId;
+    const over = targetId && targetId !== draggedId ? targetId : null;
+    dragStateRef.current.overTargetId = over;
+    setDragOverId(over);
   }
 
-  function handleDrop(e, targetId) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!draggingId || draggingId === targetId) {
-      setDragOverId(null);
-      return;
-    }
+  function onHandlePointerUp() {
+    if (!dragStateRef.current) return;
+    const { id: draggedId, overTargetId: targetId } = dragStateRef.current;
+    dragStateRef.current = null;
+    setDraggingId(null);
+    setDragOverId(null);
+    if (targetId) executeReorder(draggedId, targetId);
+  }
 
+  function onHandlePointerCancel() {
+    dragStateRef.current = null;
+    setDraggingId(null);
+    setDragOverId(null);
+  }
+
+  function executeReorder(draggedId, targetId) {
     const uncheckedItems = items.filter((i) => !i.checked);
     const checkedItems = items.filter((i) => i.checked);
-
-    const fromIdx = uncheckedItems.findIndex((i) => i.id === draggingId);
+    const fromIdx = uncheckedItems.findIndex((i) => i.id === draggedId);
     const toIdx = uncheckedItems.findIndex((i) => i.id === targetId);
-    if (fromIdx === -1 || toIdx === -1) {
-      setDragOverId(null);
-      setDraggingId(null);
-      canDragIdRef.current = null;
-      return;
-    }
-
+    if (fromIdx === -1 || toIdx === -1) return;
     const reordered = [...uncheckedItems];
     const [removed] = reordered.splice(fromIdx, 1);
     reordered.splice(toIdx, 0, removed);
-
     const allItems = [...reordered, ...checkedItems].map((item, idx) => ({
       ...item,
       item_order: idx,
     }));
-
-    setDragOverId(null);
-    setDraggingId(null);
-    canDragIdRef.current = null;
     writeList(allItems);
-  }
-
-  function handleDragEnd() {
-    setDraggingId(null);
-    setDragOverId(null);
-    canDragIdRef.current = null;
   }
 
   // Recipe removal prompt resolution
@@ -742,14 +735,11 @@ export default function ShoppingView({
     return (
       <div
         key={item.id}
-        draggable
-        onDragStart={(e) => handleDragStart(e, item.id)}
-        onDragOver={(e) => handleDragOver(e, item.id)}
-        onDrop={(e) => handleDrop(e, item.id)}
-        onDragEnd={handleDragEnd}
+        data-item-id={item.id}
         style={{
           ...s.sectionDividerRow(isDragOver),
           opacity: isDragging ? 0.4 : 1,
+          pointerEvents: isDragging ? "none" : undefined,
         }}
       >
         <div style={s.sectionDividerContent}>
@@ -796,16 +786,16 @@ export default function ShoppingView({
         </button>
 
         <div
-          style={s.dragHandle}
-          onPointerDown={(e) => {
-            canDragIdRef.current = item.id;
+          style={{
+            ...s.dragHandle,
+            touchAction: "none",
+            userSelect: "none",
+            WebkitUserSelect: "none",
           }}
-          onPointerUp={() => {
-            canDragIdRef.current = null;
-          }}
-          onPointerCancel={() => {
-            canDragIdRef.current = null;
-          }}
+          onPointerDown={(e) => onHandlePointerDown(e, item.id)}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerCancel}
         >
           <DragHandleIcon />
         </div>
@@ -822,12 +812,11 @@ export default function ShoppingView({
     return (
       <div
         key={item.id}
-        draggable
-        onDragStart={(e) => handleDragStart(e, item.id)}
-        onDragOver={(e) => handleDragOver(e, item.id)}
-        onDrop={(e) => handleDrop(e, item.id)}
-        onDragEnd={handleDragEnd}
-        style={s.itemRow(item.checked, isDragOver, isDragging)}
+        data-item-id={item.id}
+        style={{
+          ...s.itemRow(item.checked, isDragOver, isDragging),
+          pointerEvents: isDragging ? "none" : undefined,
+        }}
       >
         <div
           style={s.checkbox(item.checked)}
@@ -934,16 +923,16 @@ export default function ShoppingView({
         )}
 
         <div
-          style={s.dragHandle}
-          onPointerDown={(e) => {
-            canDragIdRef.current = item.id;
+          style={{
+            ...s.dragHandle,
+            touchAction: "none",
+            userSelect: "none",
+            WebkitUserSelect: "none",
           }}
-          onPointerUp={() => {
-            canDragIdRef.current = null;
-          }}
-          onPointerCancel={() => {
-            canDragIdRef.current = null;
-          }}
+          onPointerDown={(e) => onHandlePointerDown(e, item.id)}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerCancel}
         >
           <DragHandleIcon />
         </div>
