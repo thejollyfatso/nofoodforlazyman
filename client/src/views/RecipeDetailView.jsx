@@ -214,6 +214,12 @@ const s = {
   },
 };
 
+const IconBook = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h5v16z" />
+  </svg>
+);
+
 export default function RecipeDetailView({
   recipeId,
   onBack,
@@ -232,9 +238,22 @@ export default function RecipeDetailView({
   const [copying, setCopying] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
 
+  // Books state — only for personal (non-household) recipes
+  const [books, setBooks] = useState([]);
+  const [showBookPicker, setShowBookPicker] = useState(false);
+  const [bookActionId, setBookActionId] = useState(null);
+
   const isHousehold = !!sharedMeta;
   const isOwner =
     isHousehold && currentUserId === sharedMeta?.shared_by?.user_id;
+
+  useEffect(() => {
+    if (!isHousehold) {
+      apiFetch("/recipe-books")
+        .then(setBooks)
+        .catch(() => {});
+    }
+  }, [isHousehold, recipeId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -311,6 +330,48 @@ export default function RecipeDetailView({
     } catch {
       // silently ignore; back anyway
       onBack();
+    }
+  }
+
+  async function handleToggleBook(book) {
+    const inBook = book.recipe_ids?.includes(recipeId);
+    setBookActionId(book.id);
+    try {
+      if (inBook) {
+        await apiFetch(`/recipe-books/${book.id}/recipes/${recipeId}`, {
+          method: "DELETE",
+        });
+        setBooks((prev) =>
+          prev.map((b) =>
+            b.id === book.id
+              ? {
+                  ...b,
+                  recipe_ids: b.recipe_ids.filter((id) => id !== recipeId),
+                  recipe_count: Math.max(0, (b.recipe_count || 1) - 1),
+                }
+              : b
+          )
+        );
+      } else {
+        await apiFetch(`/recipe-books/${book.id}/recipes/${recipeId}`, {
+          method: "POST",
+        });
+        setBooks((prev) =>
+          prev.map((b) =>
+            b.id === book.id
+              ? {
+                  ...b,
+                  recipe_ids: [...(b.recipe_ids || []), recipeId],
+                  recipe_count: (b.recipe_count || 0) + 1,
+                }
+              : b
+          )
+        );
+      }
+    } catch {
+      // ignore
+    } finally {
+      setBookActionId(null);
     }
   }
 
@@ -426,6 +487,73 @@ export default function RecipeDetailView({
           </button>
         </div>
 
+        {!isHousehold && books.length > 0 && (
+          <div>
+            <p style={s.sectionLabel}>Books</p>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "6px",
+                alignItems: "center",
+              }}
+            >
+              {books
+                .filter((b) => b.recipe_ids?.includes(recipeId))
+                .map((b) => (
+                  <span
+                    key={b.id}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "var(--color-primary)",
+                      background: "var(--color-primary-light)",
+                      borderRadius: "var(--radius-sm)",
+                      padding: "4px 8px",
+                    }}
+                  >
+                    <IconBook />
+                    {b.name}
+                  </span>
+                ))}
+              <button
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  color: "#6b7280",
+                  background: "#f3f4f6",
+                  border: "none",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "4px 10px",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+                onClick={() => setShowBookPicker(true)}
+              >
+                + Manage books
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!isHousehold && books.length === 0 && (
+          <div>
+            <p style={s.sectionLabel}>Books</p>
+            <p style={{ fontSize: "13px", color: "#9ca3af" }}>
+              No books yet.{" "}
+              <span style={{ color: "var(--color-primary)" }}>
+                Create books from the Recipes view.
+              </span>
+            </p>
+          </div>
+        )}
+
         {isHousehold && isOwner && (
           <div style={s.ownerSection}>
             <label style={s.obfuscateRow}>
@@ -457,6 +585,142 @@ export default function RecipeDetailView({
           ingredient={subModal}
           onClose={() => setSubModal(null)}
         />
+      )}
+
+      {showBookPicker && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            zIndex: 200,
+            display: "flex",
+            alignItems: "flex-end",
+          }}
+          onClick={() => setShowBookPicker(false)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
+              width: "100%",
+              maxHeight: "70vh",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid var(--color-border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <p style={{ fontSize: "16px", fontWeight: "700", margin: 0 }}>
+                Manage Books
+              </p>
+              <button
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "22px",
+                  cursor: "pointer",
+                  color: "#6b7280",
+                  fontFamily: "inherit",
+                  padding: "0 4px",
+                  lineHeight: 1,
+                }}
+                onClick={() => setShowBookPicker(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div
+              style={{
+                overflowY: "auto",
+                padding: "12px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
+            >
+              {books.length === 0 && (
+                <p style={{ color: "#6b7280", textAlign: "center" }}>
+                  No books yet.
+                </p>
+              )}
+              {books.map((b) => {
+                const inBook = b.recipe_ids?.includes(recipeId);
+                const isActing = bookActionId === b.id;
+                return (
+                  <div
+                    key={b.id}
+                    style={{
+                      background: inBook ? "#f0fdf4" : "#fff",
+                      border: `1.5px solid ${inBook ? "var(--color-in-list)" : "var(--color-border)"}`,
+                      borderRadius: "var(--radius-md)",
+                      padding: "12px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                      opacity: isActing ? 0.6 : 1,
+                    }}
+                    onClick={() => !isActing && handleToggleBook(b)}
+                  >
+                    <span
+                      style={{
+                        color: inBook
+                          ? "var(--color-in-list)"
+                          : "var(--color-primary)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <IconBook />
+                    </span>
+                    <p
+                      style={{
+                        flex: 1,
+                        fontSize: "15px",
+                        fontWeight: "600",
+                        margin: 0,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {b.name}
+                    </p>
+                    {inBook && !isActing && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: "600",
+                          color: "var(--color-in-list)",
+                          background: "#d1fae5",
+                          borderRadius: "4px",
+                          padding: "2px 6px",
+                          flexShrink: 0,
+                        }}
+                      >
+                        In book ×
+                      </span>
+                    )}
+                    {isActing && (
+                      <span style={{ fontSize: "13px", color: "#6b7280" }}>
+                        {inBook ? "Removing…" : "Adding…"}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

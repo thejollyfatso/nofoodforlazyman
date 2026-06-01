@@ -156,6 +156,33 @@ def init_db():
 
             CREATE INDEX IF NOT EXISTS idx_meal_plan_bin_ctx
                 ON meal_plan_bin (context_type, context_id);
+
+            CREATE TABLE IF NOT EXISTS recipe_books (
+                id            TEXT PRIMARY KEY,
+                owner_user_id TEXT NOT NULL REFERENCES users(id),
+                name          TEXT NOT NULL,
+                description   TEXT NOT NULL DEFAULT '',
+                created_at    TEXT NOT NULL,
+                updated_at    TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS recipe_book_recipes (
+                book_id    TEXT NOT NULL REFERENCES recipe_books(id) ON DELETE CASCADE,
+                recipe_id  TEXT NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+                added_at   TEXT NOT NULL,
+                PRIMARY KEY (book_id, recipe_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS household_shared_books (
+                book_id           TEXT NOT NULL REFERENCES recipe_books(id) ON DELETE CASCADE,
+                household_id      TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+                shared_by_user_id TEXT NOT NULL REFERENCES users(id),
+                shared_at         TEXT NOT NULL,
+                PRIMARY KEY (book_id, household_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_recipe_book_owner
+                ON recipe_books (owner_user_id);
         """)
         for col, definition in [
             ("notes", "TEXT"),

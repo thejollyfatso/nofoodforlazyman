@@ -263,6 +263,7 @@ def delete_household(household_id: str, current_user: CurrentUserDep):
     with get_db() as conn:
         _require_role(conn, household_id, current_user.id, "owner")
         conn.execute("DELETE FROM household_recipes WHERE household_id=?", (household_id,))
+        conn.execute("DELETE FROM household_shared_books WHERE household_id=?", (household_id,))
         conn.execute("DELETE FROM household_invites WHERE household_id=?", (household_id,))
         conn.execute("DELETE FROM household_members WHERE household_id=?", (household_id,))
         conn.execute("DELETE FROM households WHERE id=?", (household_id,))
@@ -296,6 +297,10 @@ def leave_household(household_id: str, current_user: CurrentUserDep):
             )
         conn.execute(
             "DELETE FROM household_recipes WHERE household_id=? AND shared_by_user_id=?",
+            (household_id, current_user.id),
+        )
+        conn.execute(
+            "DELETE FROM household_shared_books WHERE household_id=? AND shared_by_user_id=?",
             (household_id, current_user.id),
         )
         conn.execute(
@@ -342,6 +347,10 @@ def remove_member(household_id: str, user_id: str, current_user: CurrentUserDep)
             raise HTTPException(status_code=404, detail="Member not found")
         conn.execute(
             "DELETE FROM household_recipes WHERE household_id=? AND shared_by_user_id=?",
+            (household_id, user_id),
+        )
+        conn.execute(
+            "DELETE FROM household_shared_books WHERE household_id=? AND shared_by_user_id=?",
             (household_id, user_id),
         )
         conn.execute(
@@ -541,3 +550,141 @@ def update_household_recipe(
         "avatar_color": updated_row["avatar_color"],
     }
     return _household_recipe_row(updated_row, sharer)
+
+
+# ── Household book sharing ────────────────────────────────────────────────────
+
+def _build_household_book(conn, book_row, sharer_row, current_user_id: str) -> dict:
+    recipe_rows = conn.execute(
+        """SELECT r.*, hr.obfuscate_secrets, hr.shared_by_user_id AS hr_sharer
+           FROM recipe_book_recipes rbr
+           JOIN recipes r ON rbr.recipe_id = r.id
+           LEFT JOIN household_recipes hr
+             ON hr.recipe_id = r.id AND hr.household_id = ?
+           WHERE rbr.book_id = ?
+           ORDER BY r.title ASC""",
+        (sharer_row["household_id"], book_row["id"]),
+    ).fetchall()
+
+    recipes = []
+    for row in recipe_rows:
+        ings = json.loads(row["ingredients"])
+        obfuscate = bool(row["obfuscate_secrets"]) if row["obfuscate_secrets"] is not None else False
+        hr_sharer = row["hr_sharer"]
+        if obfuscate and hr_sharer and hr_sharer != current_user_id:
+            ings = [i for i in ings if not i.get("secret")]
+        recipes.append({
+            "id": row["id"],
+            "title": row["title"],
+            "notes": row["notes"],
+            "ingredients": ings,
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+            "copied_from_user_id": row["copied_from_user_id"],
+            "copied_from_alias": row["copied_from_alias"],
+        })
+
+    return {
+        "id": book_row["id"],
+        "name": book_row["name"],
+        "description": book_row["description"],
+        "shared_by": {
+            "user_id": sharer_row["user_id"],
+            "alias": sharer_row["alias"],
+            "avatar_letter": sharer_row["avatar_letter"],
+            "avatar_color": sharer_row["avatar_color"],
+        },
+        "recipe_count": len(recipes),
+        "recipes": recipes,
+    }
+
+
+@router.get("/{household_id}/books")
+def list_household_books(household_id: str, current_user: CurrentUserDep):
+    with get_db() as conn:
+        _require_member(conn, household_id, current_user.id)
+        rows = conn.execute(
+            """SELECT rb.*, hsb.shared_by_user_id,
+                      hm.alias, hm.avatar_letter, hm.avatar_color
+               FROM household_shared_books hsb
+               JOIN recipe_books rb ON hsb.book_id = rb.id
+               JOIN household_members hm
+                 ON hm.household_id = hsb.household_id AND hm.user_id = hsb.shared_by_user_id
+               WHERE hsb.household_id = ?
+               ORDER BY hsb.shared_at ASC""",
+            (household_id,),
+        ).fetchall()
+
+        result = []
+        for row in rows:
+            sharer = {
+                "user_id": row["shared_by_user_id"],
+                "alias": row["alias"],
+                "avatar_letter": row["avatar_letter"],
+                "avatar_color": row["avatar_color"],
+                "household_id": household_id,
+            }
+            result.append(_build_household_book(conn, row, sharer, current_user.id))
+    return result
+
+
+@router.post("/{household_id}/books/{book_id}", status_code=201)
+def share_book(household_id: str, book_id: str, current_user: CurrentUserDep):
+    with get_db() as conn:
+        _require_member(conn, household_id, current_user.id)
+
+        book = conn.execute(
+            "SELECT * FROM recipe_books WHERE id=? AND owner_user_id=?",
+            (book_id, current_user.id),
+        ).fetchone()
+        if not book:
+            raise HTTPException(status_code=403, detail="Book not found or not yours")
+
+        existing = conn.execute(
+            "SELECT 1 FROM household_shared_books WHERE book_id=? AND household_id=?",
+            (book_id, household_id),
+        ).fetchone()
+        if existing:
+            raise HTTPException(status_code=400, detail="Book already shared in this household")
+
+        now = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            """INSERT INTO household_shared_books
+               (book_id, household_id, shared_by_user_id, shared_at)
+               VALUES (?,?,?,?)""",
+            (book_id, household_id, current_user.id, now),
+        )
+
+        hm = conn.execute(
+            "SELECT alias, avatar_letter, avatar_color FROM household_members WHERE household_id=? AND user_id=?",
+            (household_id, current_user.id),
+        ).fetchone()
+
+    sharer = {
+        "user_id": current_user.id,
+        "alias": hm["alias"],
+        "avatar_letter": hm["avatar_letter"],
+        "avatar_color": hm["avatar_color"],
+        "household_id": household_id,
+    }
+    with get_db() as conn:
+        return _build_household_book(conn, book, sharer, current_user.id)
+
+
+@router.delete("/{household_id}/books/{book_id}", status_code=204)
+def unshare_book(household_id: str, book_id: str, current_user: CurrentUserDep):
+    with get_db() as conn:
+        _require_member(conn, household_id, current_user.id)
+        row = conn.execute(
+            "SELECT shared_by_user_id FROM household_shared_books WHERE book_id=? AND household_id=?",
+            (book_id, household_id),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Shared book not found")
+        if row["shared_by_user_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="Only the sharer can unshare")
+        conn.execute(
+            "DELETE FROM household_shared_books WHERE book_id=? AND household_id=?",
+            (book_id, household_id),
+        )
+    return None
