@@ -44,9 +44,7 @@ const s = {
     flexDirection: "column",
     paddingBottom: "56px",
   },
-  header: {
-    padding: "20px 20px 0",
-  },
+  header: { padding: "20px 20px 0" },
   titleRow: {
     display: "flex",
     alignItems: "center",
@@ -161,11 +159,7 @@ const s = {
     gap: "8px",
     padding: "8px 0 4px",
   },
-  groupName: {
-    fontSize: "13px",
-    fontWeight: "700",
-    color: "#374151",
-  },
+  groupName: { fontSize: "13px", fontWeight: "700", color: "#374151" },
   backBtn: {
     background: "none",
     border: "none",
@@ -212,7 +206,7 @@ const s = {
     flexShrink: 0,
     lineHeight: 1,
   },
-  // Share picker modal
+  // Modals
   modalBackdrop: {
     position: "fixed",
     inset: 0,
@@ -237,11 +231,7 @@ const s = {
     alignItems: "center",
     justifyContent: "space-between",
   },
-  modalTitle: {
-    fontSize: "16px",
-    fontWeight: "700",
-    margin: 0,
-  },
+  modalTitle: { fontSize: "16px", fontWeight: "700", margin: 0 },
   modalClose: {
     background: "none",
     border: "none",
@@ -257,6 +247,12 @@ const s = {
     padding: "12px 20px",
     display: "flex",
     flexDirection: "column",
+    gap: "8px",
+  },
+  modalFooter: {
+    padding: "12px 20px",
+    borderTop: "1px solid var(--color-border)",
+    display: "flex",
     gap: "8px",
   },
   pickerCard: {
@@ -322,7 +318,6 @@ const s = {
     letterSpacing: "0.06em",
     padding: "8px 0 4px",
   },
-  // New/edit book modal
   inputLabel: {
     fontSize: "13px",
     fontWeight: "600",
@@ -340,12 +335,6 @@ const s = {
     outline: "none",
     fontFamily: "inherit",
     boxSizing: "border-box",
-  },
-  modalFooter: {
-    padding: "12px 20px",
-    borderTop: "1px solid var(--color-border)",
-    display: "flex",
-    gap: "8px",
   },
   saveBtn: {
     flex: 1,
@@ -384,11 +373,33 @@ const s = {
     fontFamily: "inherit",
     marginTop: "4px",
   },
+  addChoiceBtn: {
+    background: "#fff",
+    border: "1.5px solid var(--color-border)",
+    borderRadius: "var(--radius-md)",
+    padding: "18px 20px",
+    fontSize: "16px",
+    fontWeight: "600",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    color: "#374151",
+    textAlign: "left",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    width: "100%",
+  },
 };
 
 const IconBook = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
     <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h5v16z" />
+  </svg>
+);
+
+const IconRecipe = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.06 22.99h1.66c.84 0 1.53-.64 1.63-1.46L23 5.05h-5V1h-1.97v4.05h-4.97l.3 2.34c1.71.47 3.31 1.32 4.27 2.26 1.44 1.42 2.43 2.89 2.43 5.29v8.05zM1 21.99V21h15.03v.99c0 .55-.45 1-1.01 1H2.01c-.56 0-1.01-.45-1.01-1zm15.03-7c0-8-15.03-8-15.03 0h15.03zM1.02 17h15v2h-15z" />
   </svg>
 );
 
@@ -415,27 +426,28 @@ export default function RecipesView({
     () => sessionStorage.getItem("recipes_content_mode") || "recipes"
   );
 
-  // Personal books state
   const [books, setBooks] = useState([]);
   const [booksLoading, setBooksLoading] = useState(false);
-
-  // Household books state
   const [householdBooks, setHouseholdBooks] = useState([]);
   const [householdBooksLoading, setHouseholdBooksLoading] = useState(false);
-
-  // Selected book (drill-in view)
   const [selectedBook, setSelectedBook] = useState(null);
 
-  // Book form modal
-  const [bookModal, setBookModal] = useState(null); // null | { mode: "new" | "edit", book? }
+  // "+" choice sheet: pick new recipe or new book
+  const [showAddPicker, setShowAddPicker] = useState(false);
+
+  // Add-recipes-to-book picker (personal book detail view)
+  const [showAddToBook, setShowAddToBook] = useState(false);
+  const [addingToBook, setAddingToBook] = useState(null); // recipe id in-flight
+
+  // Book form modal (create / edit)
+  const [bookModal, setBookModal] = useState(null); // null | { mode:"new"|"edit", book? }
   const [bookName, setBookName] = useState("");
   const [bookDesc, setBookDesc] = useState("");
   const [bookSaving, setBookSaving] = useState(false);
 
-  // Remove-from-book loading state
   const [removingFromBook, setRemovingFromBook] = useState(null);
 
-  // Share picker state
+  // Share picker
   const [showSharePicker, setShowSharePicker] = useState(false);
   const [personalRecipes, setPersonalRecipes] = useState([]);
   const [personalBooks, setPersonalBooks] = useState([]);
@@ -447,12 +459,7 @@ export default function RecipesView({
   const [sharingBookId, setSharingBookId] = useState(null);
   const [unsharingBookId, setUnsharingBookId] = useState(null);
 
-  function switchContentMode(mode) {
-    setContentMode(mode);
-    sessionStorage.setItem("recipes_content_mode", mode);
-    setSelectedBook(null);
-    setQuery("");
-  }
+  // ── Data fetchers ────────────────────────────────────────────────────────────
 
   function fetchRecipes() {
     setLoading(true);
@@ -462,9 +469,7 @@ export default function RecipesView({
     apiFetch(url)
       .then((data) => {
         setRecipes(data);
-        if (activeHousehold) {
-          setSharedIds(new Set(data.map((r) => r.id)));
-        }
+        if (activeHousehold) setSharedIds(new Set(data.map((r) => r.id)));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -499,6 +504,154 @@ export default function RecipesView({
     else setHouseholdBooks([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeHousehold]);
+
+  // ── Mode switching ───────────────────────────────────────────────────────────
+
+  function switchContentMode(mode) {
+    setContentMode(mode);
+    sessionStorage.setItem("recipes_content_mode", mode);
+    setSelectedBook(null);
+    setQuery("");
+  }
+
+  // ── Add picker ("+" button) ──────────────────────────────────────────────────
+
+  function handleAddChoice(choice) {
+    setShowAddPicker(false);
+    if (choice === "recipe") {
+      onNewRecipe();
+    } else {
+      setBookName("");
+      setBookDesc("");
+      setBookModal({ mode: "new" });
+    }
+  }
+
+  // ── Book management ──────────────────────────────────────────────────────────
+
+  function openEditBookModal(book) {
+    setBookName(book.name);
+    setBookDesc(book.description || "");
+    setBookModal({ mode: "edit", book });
+  }
+
+  async function handleSaveBook() {
+    const name = bookName.trim();
+    if (!name) return;
+    setBookSaving(true);
+    try {
+      if (bookModal.mode === "new") {
+        await apiFetch("/recipe-books", {
+          method: "POST",
+          body: JSON.stringify({ name, description: bookDesc }),
+        });
+      } else {
+        const updated = await apiFetch(`/recipe-books/${bookModal.book.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ name, description: bookDesc }),
+        });
+        if (selectedBook?.id === bookModal.book.id) {
+          setSelectedBook((prev) => ({
+            ...prev,
+            name: updated.name,
+            description: updated.description,
+          }));
+        }
+      }
+      fetchBooks();
+      setBookModal(null);
+    } catch {
+      // ignore
+    } finally {
+      setBookSaving(false);
+    }
+  }
+
+  async function handleDeleteBook(book) {
+    if (
+      !window.confirm(
+        `Delete "${book.name}"? Recipes in this book will not be deleted.`
+      )
+    )
+      return;
+    try {
+      await apiFetch(`/recipe-books/${book.id}`, { method: "DELETE" });
+      fetchBooks();
+      if (selectedBook?.id === book.id) setSelectedBook(null);
+      setBookModal(null);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleRemoveRecipeFromBook(recipeId) {
+    if (!selectedBook) return;
+    setRemovingFromBook(recipeId);
+    try {
+      await apiFetch(`/recipe-books/${selectedBook.id}/recipes/${recipeId}`, {
+        method: "DELETE",
+      });
+      setSelectedBook((prev) => ({
+        ...prev,
+        recipes: (prev.recipes || []).filter((r) => r.id !== recipeId),
+        recipe_ids: (prev.recipe_ids || []).filter((id) => id !== recipeId),
+        recipe_count: Math.max(0, (prev.recipe_count || 1) - 1),
+      }));
+      fetchBooks();
+    } catch {
+      // ignore
+    } finally {
+      setRemovingFromBook(null);
+    }
+  }
+
+  async function handleToggleRecipeInBook(recipe) {
+    if (!selectedBook) return;
+    const inBook = (selectedBook.recipe_ids || []).includes(recipe.id);
+    setAddingToBook(recipe.id);
+    try {
+      if (inBook) {
+        await apiFetch(
+          `/recipe-books/${selectedBook.id}/recipes/${recipe.id}`,
+          { method: "DELETE" }
+        );
+        setSelectedBook((prev) => ({
+          ...prev,
+          recipes: (prev.recipes || []).filter((r) => r.id !== recipe.id),
+          recipe_ids: (prev.recipe_ids || []).filter((id) => id !== recipe.id),
+          recipe_count: Math.max(0, (prev.recipe_count || 1) - 1),
+        }));
+      } else {
+        await apiFetch(
+          `/recipe-books/${selectedBook.id}/recipes/${recipe.id}`,
+          { method: "POST" }
+        );
+        setSelectedBook((prev) => ({
+          ...prev,
+          recipes: [...(prev.recipes || []), recipe],
+          recipe_ids: [...(prev.recipe_ids || []), recipe.id],
+          recipe_count: (prev.recipe_count || 0) + 1,
+        }));
+      }
+      fetchBooks();
+    } catch {
+      // ignore
+    } finally {
+      setAddingToBook(null);
+    }
+  }
+
+  function openBook(book) {
+    if (activeHousehold) {
+      setSelectedBook(book);
+      return;
+    }
+    apiFetch(`/recipe-books/${book.id}`)
+      .then(setSelectedBook)
+      .catch(() => {});
+  }
+
+  // ── Share picker ─────────────────────────────────────────────────────────────
 
   async function openSharePicker() {
     setShowSharePicker(true);
@@ -610,98 +763,7 @@ export default function RecipesView({
     for (const b of shared) await handleUnshareBook(b);
   }
 
-  // Book management
-  function openNewBookModal() {
-    setBookName("");
-    setBookDesc("");
-    setBookModal({ mode: "new" });
-  }
-
-  function openEditBookModal(book) {
-    setBookName(book.name);
-    setBookDesc(book.description || "");
-    setBookModal({ mode: "edit", book });
-  }
-
-  async function handleSaveBook() {
-    const name = bookName.trim();
-    if (!name) return;
-    setBookSaving(true);
-    try {
-      if (bookModal.mode === "new") {
-        await apiFetch("/recipe-books", {
-          method: "POST",
-          body: JSON.stringify({ name, description: bookDesc }),
-        });
-      } else {
-        const updated = await apiFetch(`/recipe-books/${bookModal.book.id}`, {
-          method: "PATCH",
-          body: JSON.stringify({ name, description: bookDesc }),
-        });
-        if (selectedBook?.id === bookModal.book.id) {
-          setSelectedBook((prev) => ({
-            ...prev,
-            name: updated.name,
-            description: updated.description,
-          }));
-        }
-      }
-      fetchBooks();
-      setBookModal(null);
-    } catch {
-      // ignore
-    } finally {
-      setBookSaving(false);
-    }
-  }
-
-  async function handleDeleteBook(book) {
-    if (
-      !window.confirm(
-        `Delete "${book.name}"? Recipes in this book will not be deleted.`
-      )
-    )
-      return;
-    try {
-      await apiFetch(`/recipe-books/${book.id}`, { method: "DELETE" });
-      fetchBooks();
-      if (selectedBook?.id === book.id) setSelectedBook(null);
-      setBookModal(null);
-    } catch {
-      // ignore
-    }
-  }
-
-  async function handleRemoveRecipeFromBook(recipeId) {
-    if (!selectedBook) return;
-    setRemovingFromBook(recipeId);
-    try {
-      await apiFetch(`/recipe-books/${selectedBook.id}/recipes/${recipeId}`, {
-        method: "DELETE",
-      });
-      setSelectedBook((prev) => ({
-        ...prev,
-        recipes: (prev.recipes || []).filter((r) => r.id !== recipeId),
-        recipe_ids: (prev.recipe_ids || []).filter((id) => id !== recipeId),
-        recipe_count: Math.max(0, (prev.recipe_count || 1) - 1),
-      }));
-      fetchBooks();
-    } catch {
-      // ignore
-    } finally {
-      setRemovingFromBook(null);
-    }
-  }
-
-  function openBook(book) {
-    if (activeHousehold) {
-      setSelectedBook(book);
-      return;
-    }
-    apiFetch(`/recipe-books/${book.id}`)
-      .then((data) => setSelectedBook(data))
-      .catch(() => {});
-  }
+  // ── Helpers ──────────────────────────────────────────────────────────────────
 
   function pluralIngredients(n) {
     return `${n} ingredient${n === 1 ? "" : "s"}`;
@@ -743,7 +805,7 @@ export default function RecipesView({
     return { matchAll, matchAny };
   }
 
-  // ── Render helpers ───────────────────────────────────────────────────────────
+  // ── Sub-components ───────────────────────────────────────────────────────────
 
   function RecipeCard({ recipe, sharedBy, showRemoveFromBook }) {
     const n = (recipe.ingredients || []).length;
@@ -790,71 +852,6 @@ export default function RecipesView({
     );
   }
 
-  function renderGrouped(list) {
-    const groups = new Map();
-    for (const r of list) {
-      const uid = r.shared_by?.user_id || "__personal";
-      if (!groups.has(uid))
-        groups.set(uid, { member: r.shared_by, recipes: [] });
-      groups.get(uid).recipes.push(r);
-    }
-    const sections = [];
-    for (const [, group] of groups) {
-      const m = group.member;
-      const name = m?.alias || "";
-      sections.push(
-        <div key={m?.user_id || "__personal"}>
-          <div style={s.groupHeader}>
-            {m && (
-              <Avatar
-                letter={m.avatar_letter}
-                color={m.avatar_color}
-                size={24}
-              />
-            )}
-            {name && <span style={s.groupName}>{name}</span>}
-          </div>
-          {group.recipes.map((r) => (
-            <RecipeCard key={r.id} recipe={r} sharedBy={r.shared_by} />
-          ))}
-        </div>
-      );
-    }
-    return sections;
-  }
-
-  function renderGroupedBooks(bookList) {
-    const groups = new Map();
-    for (const b of bookList) {
-      const uid = b.shared_by?.user_id || "__personal";
-      if (!groups.has(uid)) groups.set(uid, { member: b.shared_by, books: [] });
-      groups.get(uid).books.push(b);
-    }
-    const sections = [];
-    for (const [, group] of groups) {
-      const m = group.member;
-      const name = m?.alias || "";
-      sections.push(
-        <div key={m?.user_id || "__personal"}>
-          <div style={s.groupHeader}>
-            {m && (
-              <Avatar
-                letter={m.avatar_letter}
-                color={m.avatar_color}
-                size={24}
-              />
-            )}
-            {name && <span style={s.groupName}>{name}</span>}
-          </div>
-          {group.books.map((b) => (
-            <BookCard key={b.id} book={b} sharedBy={b.shared_by} />
-          ))}
-        </div>
-      );
-    }
-    return sections;
-  }
-
   function BookCard({ book, sharedBy, showEdit }) {
     return (
       <div style={s.card} onClick={() => openBook(book)}>
@@ -878,7 +875,7 @@ export default function RecipesView({
             </p>
           ) : null}
         </div>
-        {showEdit ? (
+        {showEdit && (
           <button
             style={s.iconBtn}
             onClick={(e) => {
@@ -889,13 +886,80 @@ export default function RecipesView({
           >
             <IconEdit />
           </button>
-        ) : null}
+        )}
         <span style={s.chevron}>›</span>
       </div>
     );
   }
 
-  function renderList() {
+  // ── Grouped renders ──────────────────────────────────────────────────────────
+
+  function renderGrouped(list) {
+    const groups = new Map();
+    for (const r of list) {
+      const uid = r.shared_by?.user_id || "__personal";
+      if (!groups.has(uid))
+        groups.set(uid, { member: r.shared_by, recipes: [] });
+      groups.get(uid).recipes.push(r);
+    }
+    const sections = [];
+    for (const [, group] of groups) {
+      const m = group.member;
+      sections.push(
+        <div key={m?.user_id || "__personal"}>
+          <div style={s.groupHeader}>
+            {m && (
+              <Avatar
+                letter={m.avatar_letter}
+                color={m.avatar_color}
+                size={24}
+              />
+            )}
+            {m?.alias && <span style={s.groupName}>{m.alias}</span>}
+          </div>
+          {group.recipes.map((r) => (
+            <RecipeCard key={r.id} recipe={r} sharedBy={r.shared_by} />
+          ))}
+        </div>
+      );
+    }
+    return sections;
+  }
+
+  function renderGroupedBooks(bookList) {
+    const groups = new Map();
+    for (const b of bookList) {
+      const uid = b.shared_by?.user_id || "__personal";
+      if (!groups.has(uid)) groups.set(uid, { member: b.shared_by, books: [] });
+      groups.get(uid).books.push(b);
+    }
+    const sections = [];
+    for (const [, group] of groups) {
+      const m = group.member;
+      sections.push(
+        <div key={m?.user_id || "__personal"}>
+          <div style={s.groupHeader}>
+            {m && (
+              <Avatar
+                letter={m.avatar_letter}
+                color={m.avatar_color}
+                size={24}
+              />
+            )}
+            {m?.alias && <span style={s.groupName}>{m.alias}</span>}
+          </div>
+          {group.books.map((b) => (
+            <BookCard key={b.id} book={b} sharedBy={b.shared_by} />
+          ))}
+        </div>
+      );
+    }
+    return sections;
+  }
+
+  // ── Page content (no modals) ─────────────────────────────────────────────────
+
+  function renderRecipesList() {
     if (loading) {
       return (
         <p style={{ color: "#6b7280", textAlign: "center", padding: "32px 0" }}>
@@ -910,14 +974,13 @@ export default function RecipesView({
     if (!q) {
       const { sorted } = filtered;
       if (sorted.length === 0) {
-        if (activeHousehold) {
-          return (
-            <p style={s.empty}>
-              No recipes shared yet. Tap &quot;Share a Recipe&quot; to add one.
-            </p>
-          );
-        }
-        return <p style={s.empty}>No recipes yet. Tap + to add one.</p>;
+        return activeHousehold ? (
+          <p style={s.empty}>
+            No recipes shared yet. Tap &quot;Share&quot; to add one.
+          </p>
+        ) : (
+          <p style={s.empty}>No recipes yet. Tap + to add one.</p>
+        );
       }
       if (activeHousehold && groupView) return renderGrouped(sorted);
       return sorted.map((r) => (
@@ -927,9 +990,8 @@ export default function RecipesView({
 
     if (searchMode === "recipe") {
       const { sorted } = filtered;
-      if (sorted.length === 0) {
+      if (sorted.length === 0)
         return <p style={s.empty}>{`No recipes match "${q}".`}</p>;
-      }
       if (activeHousehold && groupView) return renderGrouped(sorted);
       return sorted.map((r) => (
         <RecipeCard key={r.id} recipe={r} sharedBy={r.shared_by} />
@@ -937,9 +999,8 @@ export default function RecipesView({
     }
 
     const { matchAll, matchAny } = filtered;
-    if (matchAll.length === 0 && matchAny.length === 0) {
+    if (matchAll.length === 0 && matchAny.length === 0)
       return <p style={s.empty}>{`No recipes match "${q}".`}</p>;
-    }
     return (
       <>
         {matchAll.length > 0 && (
@@ -962,123 +1023,259 @@ export default function RecipesView({
     );
   }
 
-  // ── Book detail view (inside a selected book) ────────────────────────────────
+  function renderModeToggle() {
+    return (
+      <div style={{ ...s.segmented, marginBottom: "8px" }}>
+        <button
+          style={s.segBtn(contentMode === "books")}
+          onClick={() => switchContentMode("books")}
+        >
+          Books
+        </button>
+        <button
+          style={s.segBtn(contentMode === "recipes")}
+          onClick={() => switchContentMode("recipes")}
+        >
+          Recipes
+        </button>
+      </div>
+    );
+  }
 
-  function renderBookDetail() {
-    if (!selectedBook) return null;
-    const isHhBook = !!activeHousehold;
-    const bookRecipes = selectedBook.recipes || [];
-    const sharedBy = selectedBook.shared_by;
+  function getPageContent() {
+    const title = activeHousehold ? activeHousehold.name : "Recipes";
 
-    const q = query.trim();
-    let displayRecipes = bookRecipes;
-    if (q) {
-      const ql = q.toLowerCase();
-      displayRecipes = bookRecipes.filter((r) =>
-        r.title.toLowerCase().includes(ql)
+    // ── Book detail ────────────────────────────────────────────────────────────
+    if (selectedBook) {
+      const isHhBook = !!activeHousehold;
+      const bookRecipes = selectedBook.recipes || [];
+      const sharedBy = selectedBook.shared_by;
+      const q = query.trim();
+      let display = [...bookRecipes].sort((a, b) =>
+        a.title.localeCompare(b.title)
+      );
+      if (q) {
+        const ql = q.toLowerCase();
+        display = display.filter((r) => r.title.toLowerCase().includes(ql));
+      }
+
+      return (
+        <div style={s.page}>
+          <div style={s.header}>
+            <div style={s.bookHeaderRow}>
+              <button
+                style={s.backBtn}
+                onClick={() => {
+                  setSelectedBook(null);
+                  setQuery("");
+                }}
+              >
+                ‹ Books
+              </button>
+              {sharedBy && (
+                <Avatar
+                  letter={sharedBy.avatar_letter}
+                  color={sharedBy.avatar_color}
+                  size={28}
+                />
+              )}
+              <p style={s.bookTitle}>{selectedBook.name}</p>
+              {!isHhBook && (
+                <button
+                  style={s.iconBtn}
+                  onClick={() => openEditBookModal(selectedBook)}
+                  aria-label="Edit book"
+                >
+                  <IconEdit />
+                </button>
+              )}
+            </div>
+            <div style={s.searchRow}>
+              <input
+                style={s.searchInput}
+                type="search"
+                placeholder="Search recipes in this book…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          </div>
+          <div style={s.body}>
+            {!isHhBook && (
+              <button style={s.shareBtn} onClick={() => setShowAddToBook(true)}>
+                + Add Recipes to Book
+              </button>
+            )}
+            {display.length === 0 && !q && (
+              <p style={s.empty}>
+                {isHhBook
+                  ? "No recipes in this book."
+                  : "No recipes in this book yet."}
+              </p>
+            )}
+            {display.length === 0 && q && (
+              <p style={s.empty}>{`No recipes match "${q}".`}</p>
+            )}
+            {display.map((r) => (
+              <RecipeCard
+                key={r.id}
+                recipe={r}
+                sharedBy={isHhBook ? sharedBy : null}
+                showRemoveFromBook={!isHhBook}
+              />
+            ))}
+          </div>
+        </div>
       );
     }
-    displayRecipes = [...displayRecipes].sort((a, b) =>
-      a.title.localeCompare(b.title)
-    );
 
+    // ── Books list ─────────────────────────────────────────────────────────────
+    if (contentMode === "books") {
+      if (activeHousehold) {
+        return (
+          <div style={s.page}>
+            <div style={s.header}>
+              <div style={s.titleRow}>
+                <p style={s.title}>{title}</p>
+              </div>
+              {renderModeToggle()}
+            </div>
+            <div style={s.body}>
+              {!householdBooksLoading && (
+                <button style={s.shareBtn} onClick={openSharePicker}>
+                  Share
+                </button>
+              )}
+              <div style={s.segmented}>
+                <button
+                  style={s.segBtn(groupView)}
+                  onClick={() => setGroupView(true)}
+                >
+                  Grouped
+                </button>
+                <button
+                  style={s.segBtn(!groupView)}
+                  onClick={() => setGroupView(false)}
+                >
+                  Mixed
+                </button>
+              </div>
+              {householdBooksLoading && (
+                <p
+                  style={{
+                    color: "#6b7280",
+                    textAlign: "center",
+                    padding: "32px 0",
+                  }}
+                >
+                  Loading…
+                </p>
+              )}
+              {!householdBooksLoading && householdBooks.length === 0 && (
+                <p style={s.empty}>
+                  No books shared yet. Tap &quot;Share&quot; to add one.
+                </p>
+              )}
+              {!householdBooksLoading &&
+                householdBooks.length > 0 &&
+                (groupView
+                  ? renderGroupedBooks(householdBooks)
+                  : householdBooks.map((b) => (
+                      <BookCard key={b.id} book={b} sharedBy={b.shared_by} />
+                    )))}
+            </div>
+          </div>
+        );
+      }
+
+      // Personal books list
+      return (
+        <div style={s.page}>
+          <div style={s.header}>
+            <div style={s.titleRow}>
+              <p style={s.title}>{title}</p>
+            </div>
+            {renderModeToggle()}
+          </div>
+          <div style={s.body}>
+            {!booksLoading && (
+              <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
+                +
+              </button>
+            )}
+            {booksLoading && (
+              <p
+                style={{
+                  color: "#6b7280",
+                  textAlign: "center",
+                  padding: "32px 0",
+                }}
+              >
+                Loading…
+              </p>
+            )}
+            {!booksLoading && books.length === 0 && (
+              <p style={s.empty}>No books yet. Tap + to create one.</p>
+            )}
+            {!booksLoading &&
+              books.map((b) => (
+                <BookCard key={b.id} book={b} sharedBy={null} showEdit />
+              ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ── Recipes list ───────────────────────────────────────────────────────────
     return (
       <div style={s.page}>
         <div style={s.header}>
-          <div style={s.bookHeaderRow}>
-            <button style={s.backBtn} onClick={() => setSelectedBook(null)}>
-              ‹ Books
-            </button>
-            {sharedBy && (
-              <Avatar
-                letter={sharedBy.avatar_letter}
-                color={sharedBy.avatar_color}
-                size={28}
-              />
-            )}
-            <p style={s.bookTitle}>{selectedBook.name}</p>
-            {!isHhBook && (
-              <button
-                style={s.iconBtn}
-                onClick={() => openEditBookModal(selectedBook)}
-                aria-label="Edit book"
-              >
-                <IconEdit />
-              </button>
-            )}
+          <div style={s.titleRow}>
+            <p style={s.title}>{title}</p>
           </div>
           <div style={s.searchRow}>
             <input
               style={s.searchInput}
               type="search"
-              placeholder="Search recipes…"
+              placeholder={
+                searchMode === "recipe"
+                  ? "Search by recipe name…"
+                  : "Search by ingredient…"
+              }
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            <div style={s.segmented}>
+              <button
+                style={s.segBtn(searchMode === "recipe")}
+                onClick={() => setSearchMode("recipe")}
+              >
+                Recipe
+              </button>
+              <button
+                style={s.segBtn(searchMode === "ingredient")}
+                onClick={() => setSearchMode("ingredient")}
+              >
+                Ingredient
+              </button>
+            </div>
           </div>
+          {renderModeToggle()}
         </div>
         <div style={s.body}>
-          {displayRecipes.length === 0 && !q && (
-            <p style={s.empty}>
-              {isHhBook
-                ? "No recipes in this book."
-                : "No recipes in this book yet. Add them from recipe detail view."}
-            </p>
-          )}
-          {displayRecipes.length === 0 && q && (
-            <p style={s.empty}>{`No recipes match "${q}".`}</p>
-          )}
-          {displayRecipes.map((r) => (
-            <RecipeCard
-              key={r.id}
-              recipe={r}
-              sharedBy={isHhBook ? sharedBy : null}
-              showRemoveFromBook={!isHhBook}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Books list view ──────────────────────────────────────────────────────────
-
-  function renderBooksMode() {
-    if (selectedBook) return renderBookDetail();
-
-    if (activeHousehold) {
-      // Household books mode
-      const isLoading = householdBooksLoading;
-      const list = householdBooks;
-      return (
-        <div style={s.page}>
-          <div style={s.header}>
-            <div style={s.titleRow}>
-              <p style={s.title}>{activeHousehold.name}</p>
-            </div>
-            <div style={{ marginBottom: "8px" }}>
-              <div style={s.segmented}>
-                <button
-                  style={s.segBtn(contentMode === "books")}
-                  onClick={() => switchContentMode("books")}
-                >
-                  Books
-                </button>
-                <button
-                  style={s.segBtn(contentMode === "recipes")}
-                  onClick={() => switchContentMode("recipes")}
-                >
-                  Recipes
-                </button>
-              </div>
-            </div>
-          </div>
-          <div style={s.body}>
-            {!isLoading && (
-              <button style={s.shareBtn} onClick={openSharePicker}>
-                Share a Recipe or Book
+          {!loading && (
+            <>
+              <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
+                +
               </button>
-            )}
+              {activeHousehold && (
+                <button style={s.shareBtn} onClick={openSharePicker}>
+                  Share
+                </button>
+              )}
+            </>
+          )}
+          {activeHousehold && (
             <div style={s.segmented}>
               <button
                 style={s.segBtn(groupView)}
@@ -1093,178 +1290,173 @@ export default function RecipesView({
                 Mixed
               </button>
             </div>
-            {isLoading && (
-              <p
-                style={{
-                  color: "#6b7280",
-                  textAlign: "center",
-                  padding: "32px 0",
-                }}
-              >
-                Loading…
-              </p>
-            )}
-            {!isLoading && list.length === 0 && (
-              <p style={s.empty}>
-                No books shared yet. Tap &quot;Share a Recipe or Book&quot; to
-                add one.
-              </p>
-            )}
-            {!isLoading &&
-              list.length > 0 &&
-              (groupView
-                ? renderGroupedBooks(list)
-                : list.map((b) => (
-                    <BookCard key={b.id} book={b} sharedBy={b.shared_by} />
-                  )))}
-          </div>
-        </div>
-      );
-    }
-
-    // Personal books mode
-    return (
-      <div style={s.page}>
-        <div style={s.header}>
-          <div style={s.titleRow}>
-            <p style={s.title}>Recipes</p>
-          </div>
-          <div style={{ marginBottom: "8px" }}>
-            <div style={s.segmented}>
-              <button
-                style={s.segBtn(contentMode === "books")}
-                onClick={() => switchContentMode("books")}
-              >
-                Books
-              </button>
-              <button
-                style={s.segBtn(contentMode === "recipes")}
-                onClick={() => switchContentMode("recipes")}
-              >
-                Recipes
-              </button>
-            </div>
-          </div>
-        </div>
-        <div style={s.body}>
-          {!booksLoading && (
-            <button style={s.addBtn} onClick={openNewBookModal}>
-              + New Book
-            </button>
           )}
-          {booksLoading && (
-            <p
-              style={{
-                color: "#6b7280",
-                textAlign: "center",
-                padding: "32px 0",
-              }}
-            >
-              Loading…
-            </p>
-          )}
-          {!booksLoading && books.length === 0 && (
-            <p style={s.empty}>No books yet. Tap + to create one.</p>
-          )}
-          {!booksLoading &&
-            books.map((b) => (
-              <BookCard key={b.id} book={b} sharedBy={null} showEdit />
-            ))}
+          {renderRecipesList()}
         </div>
       </div>
     );
   }
 
-  // ── Main recipes view ────────────────────────────────────────────────────────
-
-  const title = activeHousehold ? activeHousehold.name : "Recipes";
-
-  if (contentMode === "books") return renderBooksMode();
+  // ── Root render — page content + all modals ──────────────────────────────────
 
   return (
-    <div style={s.page}>
-      <div style={s.header}>
-        <div style={s.titleRow}>
-          <p style={s.title}>{title}</p>
-        </div>
-        <div style={s.searchRow}>
-          <input
-            style={s.searchInput}
-            type="search"
-            placeholder={
-              searchMode === "recipe"
-                ? "Search by recipe name…"
-                : "Search by ingredient…"
-            }
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <div style={s.segmented}>
-            <button
-              style={s.segBtn(searchMode === "recipe")}
-              onClick={() => setSearchMode("recipe")}
-            >
-              Recipe
-            </button>
-            <button
-              style={s.segBtn(searchMode === "ingredient")}
-              onClick={() => setSearchMode("ingredient")}
-            >
-              Ingredient
-            </button>
-          </div>
-        </div>
-        <div style={{ marginBottom: "8px" }}>
-          <div style={s.segmented}>
-            <button
-              style={s.segBtn(contentMode === "books")}
-              onClick={() => switchContentMode("books")}
-            >
-              Books
-            </button>
-            <button
-              style={s.segBtn(contentMode === "recipes")}
-              onClick={() => switchContentMode("recipes")}
-            >
-              Recipes
-            </button>
-          </div>
-        </div>
-      </div>
+    <>
+      {getPageContent()}
 
-      <div style={s.body}>
-        {!loading && (
-          <>
-            <button style={s.addBtn} onClick={onNewRecipe}>
-              + New Recipe
-            </button>
-            {activeHousehold && (
-              <button style={s.shareBtn} onClick={openSharePicker}>
-                Share a Recipe or Book
+      {/* "+" choice: New Recipe or New Book */}
+      {showAddPicker && (
+        <div style={s.modalBackdrop} onClick={() => setShowAddPicker(false)}>
+          <div
+            style={{ ...s.modalSheet, maxHeight: "auto" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={s.modalHeader}>
+              <p style={s.modalTitle}>Add</p>
+              <button
+                style={s.modalClose}
+                onClick={() => setShowAddPicker(false)}
+              >
+                ×
               </button>
-            )}
-          </>
-        )}
-        {activeHousehold && (
-          <div style={s.segmented}>
-            <button
-              style={s.segBtn(groupView)}
-              onClick={() => setGroupView(true)}
+            </div>
+            <div
+              style={{
+                padding: "12px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
             >
-              Grouped
-            </button>
-            <button
-              style={s.segBtn(!groupView)}
-              onClick={() => setGroupView(false)}
-            >
-              Mixed
-            </button>
+              <button
+                style={s.addChoiceBtn}
+                onClick={() => handleAddChoice("recipe")}
+              >
+                <span style={{ color: "var(--color-primary)" }}>
+                  <IconRecipe />
+                </span>
+                New Recipe
+              </button>
+              <button
+                style={s.addChoiceBtn}
+                onClick={() => handleAddChoice("book")}
+              >
+                <span style={{ color: "var(--color-primary)" }}>
+                  <IconBook />
+                </span>
+                New Book
+              </button>
+            </div>
           </div>
-        )}
-        {renderList()}
-      </div>
+        </div>
+      )}
 
-      {/* Share picker modal */}
+      {/* Add recipes to book picker */}
+      {showAddToBook && selectedBook && (
+        <div style={s.modalBackdrop} onClick={() => setShowAddToBook(false)}>
+          <div style={s.modalSheet} onClick={(e) => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <p style={s.modalTitle}>Add Recipes to {selectedBook.name}</p>
+              <button
+                style={s.modalClose}
+                onClick={() => setShowAddToBook(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div style={s.modalBody}>
+              {recipes.length === 0 && (
+                <p style={{ color: "#6b7280", textAlign: "center" }}>
+                  No personal recipes yet.
+                </p>
+              )}
+              {[...recipes]
+                .sort((a, b) => a.title.localeCompare(b.title))
+                .map((r) => {
+                  const inBook = (selectedBook.recipe_ids || []).includes(r.id);
+                  const isActing = addingToBook === r.id;
+                  return (
+                    <div
+                      key={r.id}
+                      style={inBook ? s.pickerCardShared : s.pickerCard}
+                      onClick={() => !isActing && handleToggleRecipeInBook(r)}
+                    >
+                      <p style={s.pickerTitle}>{r.title}</p>
+                      {inBook && !isActing && (
+                        <span style={s.sharedBadge}>In book ×</span>
+                      )}
+                      {isActing && (
+                        <span style={{ fontSize: "13px", color: "#6b7280" }}>
+                          {inBook ? "Removing…" : "Adding…"}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Book create / edit modal */}
+      {bookModal && (
+        <div style={s.modalBackdrop} onClick={() => setBookModal(null)}>
+          <div style={s.modalSheet} onClick={(e) => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <p style={s.modalTitle}>
+                {bookModal.mode === "new" ? "New Book" : "Edit Book"}
+              </p>
+              <button style={s.modalClose} onClick={() => setBookModal(null)}>
+                ×
+              </button>
+            </div>
+            <div style={s.modalBody}>
+              <div>
+                <label style={s.inputLabel}>Name</label>
+                <input
+                  style={s.textInput}
+                  type="text"
+                  placeholder="Book name"
+                  value={bookName}
+                  onChange={(e) => setBookName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label style={s.inputLabel}>Description (optional)</label>
+                <input
+                  style={s.textInput}
+                  type="text"
+                  placeholder="e.g. Weeknight dinners"
+                  value={bookDesc}
+                  onChange={(e) => setBookDesc(e.target.value)}
+                />
+              </div>
+              {bookModal.mode === "edit" && (
+                <button
+                  style={s.deleteBookBtn}
+                  onClick={() => handleDeleteBook(bookModal.book)}
+                >
+                  Delete Book
+                </button>
+              )}
+            </div>
+            <div style={s.modalFooter}>
+              <button style={s.cancelBtn} onClick={() => setBookModal(null)}>
+                Cancel
+              </button>
+              <button
+                style={s.saveBtn}
+                disabled={bookSaving || !bookName.trim()}
+                onClick={handleSaveBook}
+              >
+                {bookSaving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share to household picker */}
       {showSharePicker && (
         <div style={s.modalBackdrop} onClick={() => setShowSharePicker(false)}>
           <div style={s.modalSheet} onClick={(e) => e.stopPropagation()}>
@@ -1285,7 +1477,6 @@ export default function RecipesView({
               )}
               {!pickerLoading && (
                 <>
-                  {/* Recipes section */}
                   <p style={s.pickerSectionLabel}>Recipes</p>
                   {personalRecipes.length > 0 && (
                     <div style={s.selectAllRow}>
@@ -1345,7 +1536,6 @@ export default function RecipesView({
                       );
                     })}
 
-                  {/* Books section */}
                   <p style={{ ...s.pickerSectionLabel, marginTop: "8px" }}>
                     Books
                   </p>
@@ -1436,65 +1626,6 @@ export default function RecipesView({
           </div>
         </div>
       )}
-
-      {/* New/edit book modal */}
-      {bookModal && (
-        <div style={s.modalBackdrop} onClick={() => setBookModal(null)}>
-          <div style={s.modalSheet} onClick={(e) => e.stopPropagation()}>
-            <div style={s.modalHeader}>
-              <p style={s.modalTitle}>
-                {bookModal.mode === "new" ? "New Book" : "Edit Book"}
-              </p>
-              <button style={s.modalClose} onClick={() => setBookModal(null)}>
-                ×
-              </button>
-            </div>
-            <div style={s.modalBody}>
-              <div>
-                <label style={s.inputLabel}>Name</label>
-                <input
-                  style={s.textInput}
-                  type="text"
-                  placeholder="Book name"
-                  value={bookName}
-                  onChange={(e) => setBookName(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label style={s.inputLabel}>Description (optional)</label>
-                <input
-                  style={s.textInput}
-                  type="text"
-                  placeholder="e.g. Weeknight dinners"
-                  value={bookDesc}
-                  onChange={(e) => setBookDesc(e.target.value)}
-                />
-              </div>
-              {bookModal.mode === "edit" && (
-                <button
-                  style={s.deleteBookBtn}
-                  onClick={() => handleDeleteBook(bookModal.book)}
-                >
-                  Delete Book
-                </button>
-              )}
-            </div>
-            <div style={s.modalFooter}>
-              <button style={s.cancelBtn} onClick={() => setBookModal(null)}>
-                Cancel
-              </button>
-              <button
-                style={s.saveBtn}
-                disabled={bookSaving || !bookName.trim()}
-                onClick={handleSaveBook}
-              >
-                {bookSaving ? "Saving…" : "Save"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
