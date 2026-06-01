@@ -574,10 +574,17 @@ export default function RecipesView({
     setBookSaving(true);
     try {
       if (bookModal.mode === "new") {
-        await apiFetch("/recipe-books", {
+        const newBook = await apiFetch("/recipe-books", {
           method: "POST",
           body: JSON.stringify({ name, description: bookDesc }),
         });
+        if (activeHousehold) {
+          await apiFetch(
+            `/households/${activeHousehold.id}/books/${newBook.id}`,
+            { method: "POST" }
+          );
+          fetchHouseholdBooks();
+        }
       } else {
         const updated = await apiFetch(`/recipe-books/${bookModal.book.id}`, {
           method: "PATCH",
@@ -1036,6 +1043,9 @@ export default function RecipesView({
       if (activeHousehold) {
         return (
           <div style={s.actionBar}>
+            <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
+              +
+            </button>
             <button style={s.shareBtn} onClick={openSharePicker}>
               Share
             </button>
@@ -1447,6 +1457,7 @@ export default function RecipesView({
               style={{
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "flex-end",
                 gap: "8px",
                 fontSize: "14px",
                 fontWeight: "600",
