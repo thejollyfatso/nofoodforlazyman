@@ -10,7 +10,7 @@ export default defineConfig({
       name: "nf4lm",
       filename: "remoteEntry.js",
       exposes: {
-        "./App": "./src/main.jsx",
+        "./App": "./src/App.jsx",
       },
       shared: ["react", "react-dom"],
     }),
