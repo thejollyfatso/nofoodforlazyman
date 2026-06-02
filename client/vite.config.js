@@ -15,7 +15,6 @@ export default defineConfig({
       shared: {
         react: { singleton: true },
         "react-dom": { singleton: true },
-        "react-router-dom": { singleton: true },
       },
     }),
     VitePWA({
