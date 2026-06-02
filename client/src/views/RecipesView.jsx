@@ -1044,7 +1044,7 @@ export default function RecipesView({
         return (
           <div style={s.actionBar}>
             <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
-              +
+              New
             </button>
             <button style={s.shareBtn} onClick={openSharePicker}>
               Share
@@ -1065,7 +1065,7 @@ export default function RecipesView({
     return (
       <div style={s.actionBar}>
         <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
-          +
+          New
         </button>
         {activeHousehold && (
           <button style={s.shareBtn} onClick={openSharePicker}>
