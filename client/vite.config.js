@@ -12,7 +12,11 @@ export default defineConfig({
       exposes: {
         "./App": "./src/App.jsx",
       },
-      shared: ["react", "react-dom"],
+      shared: {
+        react: { singleton: true },
+        "react-dom": { singleton: true },
+        "react-router-dom": { singleton: true },
+      },
     }),
     VitePWA({
       registerType: "autoUpdate",
