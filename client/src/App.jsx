@@ -423,11 +423,57 @@ function NavBar({
   );
 }
 
+// ── Demo banner ──────────────────────────────────────────────────────────────
+
+function DemoBanner({ onSignIn }) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        background: "var(--color-primary-light)",
+        borderBottom: "1px solid var(--color-primary)",
+        padding: "10px 16px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "12px",
+        fontSize: "13px",
+        color: "var(--color-primary-dark)",
+        boxSizing: "border-box",
+      }}
+    >
+      <span>
+        Demo mode — changes are temporary and will be lost when your session
+        ends.
+      </span>
+      <button
+        type="button"
+        onClick={onSignIn}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          fontSize: "13px",
+          fontWeight: "600",
+          color: "var(--color-primary)",
+          textDecoration: "underline",
+          cursor: "pointer",
+          fontFamily: "inherit",
+          whiteSpace: "nowrap",
+        }}
+      >
+        Sign in
+      </button>
+    </div>
+  );
+}
+
 // ── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
   const {
     isAuthenticated,
+    isDemoMode,
     token,
     handleLogin,
     handleLogout,
@@ -632,6 +678,7 @@ export default function App() {
   return (
     <>
       <DeviceBanner />
+      {isDemoMode && <DemoBanner onSignIn={handleLogout} />}
       {view === "home" && (
         <HomeView
           shopping={shopping}

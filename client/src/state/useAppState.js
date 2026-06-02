@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { setUnauthorizedHandler } from "../utils/apiFetch";
 
-function decodeTokenUserId(token) {
+function decodeTokenPayload(token) {
   if (!token) return null;
   try {
     const payload = token.split(".")[1];
     const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(json).sub ?? null;
+    return JSON.parse(json);
   } catch {
     return null;
   }
+}
+
+function decodeTokenUserId(token) {
+  return decodeTokenPayload(token)?.sub ?? null;
 }
 
 const NAV_VIEWS = ["home", "recipes", "shopping", "plan"];
@@ -42,6 +46,10 @@ export function useAppState() {
   });
 
   const currentUserId = useMemo(() => decodeTokenUserId(token), [token]);
+  const isDemoMode = useMemo(
+    () => decodeTokenPayload(token)?.demo === true,
+    [token]
+  );
 
   const openSettings = useCallback(() => {
     setView((current) => {
@@ -201,6 +209,7 @@ export function useAppState() {
     token,
     isAuthenticated: !!token,
     currentUserId,
+    isDemoMode,
     handleLogin,
     handleLogout,
     view,

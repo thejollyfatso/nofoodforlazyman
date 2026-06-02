@@ -8,7 +8,7 @@ import resend
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from server.db import get_db
+from server.db import create_demo_db, get_db
 
 router = APIRouter(tags=["Auth"])
 
@@ -17,6 +17,7 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 FROM_ADDRESS = os.getenv("EMAIL_FROM", "No Food for Lazy Man <noreply@deleonanddeleon.com>")
 OTP_TTL_MINUTES = 10
 TOKEN_TTL_DAYS = 30
+DEMO_TOKEN_TTL_HOURS = 2
 
 
 class MagicRequest(BaseModel):
@@ -38,6 +39,18 @@ def _issue_token(user_id: str, email: str) -> str:
         "email": email,
         "iat": datetime.now(timezone.utc),
         "exp": datetime.now(timezone.utc) + timedelta(days=TOKEN_TTL_DAYS),
+    }
+    return jwt.encode(payload, SECRET, algorithm="HS256")
+
+
+def _issue_demo_token(session_id: str) -> str:
+    payload = {
+        "sub": f"demo_{session_id}",
+        "email": "demo@demo.local",
+        "demo": True,
+        "demo_db": session_id,
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=DEMO_TOKEN_TTL_HOURS),
     }
     return jwt.encode(payload, SECRET, algorithm="HS256")
 
@@ -116,3 +129,10 @@ def verify_magic(body: VerifyRequest):
             )
 
     return {"token": _issue_token(user_id, email)}
+
+
+@router.post("/demo")
+def start_demo():
+    session_id = secrets.token_hex(16)
+    create_demo_db(session_id)
+    return {"token": _issue_demo_token(session_id)}

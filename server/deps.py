@@ -11,6 +11,8 @@ SECRET = os.getenv("BETTER_AUTH_SECRET", "")
 class CurrentUser(BaseModel):
     id: str
     email: str
+    is_demo: bool = False
+    demo_db: str | None = None
 
 
 def get_current_user(
@@ -25,6 +27,15 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+    if payload.get("demo"):
+        return CurrentUser(
+            id=payload["sub"],
+            email=payload["email"],
+            is_demo=True,
+            demo_db=payload["demo_db"],
+        )
+
     return CurrentUser(id=payload["sub"], email=payload["email"])
 
 

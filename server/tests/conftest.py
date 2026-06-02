@@ -103,6 +103,16 @@ def add_member(db_path):
 
 
 @pytest.fixture()
+def demo_session(client, tmp_path, monkeypatch):
+    import server.db as db_module
+
+    monkeypatch.setattr(db_module, "DEMO_DB_DIR", str(tmp_path))
+    resp = client.post("/auth/demo")
+    assert resp.status_code == 200
+    return resp.json()
+
+
+@pytest.fixture()
 def insert_otp(db_path):
     def _insert(email: str, code: str, used: int = 0, minutes_from_now: int = 10):
         otp_id = secrets.token_hex(16)

@@ -86,6 +86,34 @@ const styles = {
     fontFamily: "inherit",
     textAlign: "left",
   },
+  divider: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    fontSize: "13px",
+    color: "#9ca3af",
+  },
+  dividerLine: {
+    flex: 1,
+    height: "1px",
+    background: "var(--color-border)",
+  },
+  demoButton: {
+    width: "100%",
+    padding: "14px",
+    fontSize: "16px",
+    fontWeight: "600",
+    color: "var(--color-primary)",
+    background: "var(--color-primary-light)",
+    border: "1.5px solid var(--color-primary)",
+    borderRadius: "var(--radius-md)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  demoButtonDisabled: {
+    opacity: 0.6,
+    cursor: "not-allowed",
+  },
 };
 
 export default function LoginView({ onLogin, joinPreview }) {
@@ -93,6 +121,7 @@ export default function LoginView({ onLogin, joinPreview }) {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState(null);
 
   async function handleEmailSubmit(e) {
@@ -154,6 +183,22 @@ export default function LoginView({ onLogin, joinPreview }) {
     setError(null);
   }
 
+  async function handleDemoLogin() {
+    setDemoLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${BASE_URL}/auth/demo`, { method: "POST" });
+      if (!res.ok) throw new Error("Could not start demo");
+      const data = await res.json();
+      localStorage.setItem("mk_token", data.token);
+      onLogin(data.token);
+    } catch (err) {
+      setError(err.message ?? "Something went wrong");
+    } finally {
+      setDemoLoading(false);
+    }
+  }
+
   const btnStyle = loading
     ? { ...styles.button, ...styles.buttonDisabled }
     : styles.button;
@@ -182,21 +227,40 @@ export default function LoginView({ onLogin, joinPreview }) {
         {error && <div style={styles.error}>{error}</div>}
 
         {step === "email" ? (
-          <form style={styles.form} onSubmit={handleEmailSubmit}>
-            <input
-              type="email"
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-              autoFocus
-              autoComplete="email"
-              required
-            />
-            <button type="submit" disabled={loading} style={btnStyle}>
-              {loading ? "Sending…" : "Send Code"}
+          <>
+            <form style={styles.form} onSubmit={handleEmailSubmit}>
+              <input
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={styles.input}
+                autoFocus
+                autoComplete="email"
+                required
+              />
+              <button type="submit" disabled={loading} style={btnStyle}>
+                {loading ? "Sending…" : "Send Code"}
+              </button>
+            </form>
+            <div style={styles.divider}>
+              <span style={styles.dividerLine} />
+              <span>or</span>
+              <span style={styles.dividerLine} />
+            </div>
+            <button
+              type="button"
+              disabled={demoLoading}
+              style={
+                demoLoading
+                  ? { ...styles.demoButton, ...styles.demoButtonDisabled }
+                  : styles.demoButton
+              }
+              onClick={handleDemoLogin}
+            >
+              {demoLoading ? "Starting demo…" : "Try demo"}
             </button>
-          </form>
+          </>
         ) : (
           <form style={styles.form} onSubmit={handleOtpSubmit}>
             <input
