@@ -42,6 +42,11 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    target: "esnext",
+    modulePreload: false,
+    cssCodeSplit: false,
+  },
   server: {
     proxy: {
       "/auth": {
