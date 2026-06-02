@@ -4,6 +4,21 @@ import { formatQty } from "../utils/formatQty";
 import { removeRecipeFromList, subtractQty } from "../state/useShoppingList";
 import Avatar from "../components/Avatar";
 
+// ── Drag handle icon ──────────────────────────────────────────────────────────
+
+function DragHandleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+      <circle cx="5" cy="4" r="1.5" />
+      <circle cx="11" cy="4" r="1.5" />
+      <circle cx="5" cy="8" r="1.5" />
+      <circle cx="11" cy="8" r="1.5" />
+      <circle cx="5" cy="12" r="1.5" />
+      <circle cx="11" cy="12" r="1.5" />
+    </svg>
+  );
+}
+
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
 const s = {
@@ -121,15 +136,27 @@ const s = {
     background: color || "#fff",
     border: "1.5px solid var(--color-border)",
     borderRadius: "var(--radius-sm)",
-    padding: "8px 12px",
+    padding: "8px 12px 8px 0",
     marginBottom: "6px",
-    cursor: "grab",
+    cursor: "pointer",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     opacity: dragging ? 0.4 : 1,
     userSelect: "none",
   }),
+  mealDragHandle: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "4px 8px 4px 12px",
+    cursor: "grab",
+    flexShrink: 0,
+    color: "#d1d5db",
+    touchAction: "none",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+  },
   mealCardNotes: {
     fontSize: "11px",
     color: "#6b7280",
@@ -1660,14 +1687,9 @@ export default function PlanView({
                     data-meal-id={meal.id}
                     style={{
                       ...s.mealCard(meal.color, draggingMealId === meal.id),
-                      touchAction: "none",
                       pointerEvents:
                         draggingMealId === meal.id ? "none" : undefined,
                     }}
-                    onPointerDown={(e) => onMealPointerDown(e, meal)}
-                    onPointerMove={onMealPointerMove}
-                    onPointerUp={onMealPointerUp}
-                    onPointerCancel={onMealPointerCancel}
                     onClick={() => {
                       if (suppressMealClickRef.current) {
                         suppressMealClickRef.current = false;
@@ -1676,6 +1698,19 @@ export default function PlanView({
                       openEdit(meal);
                     }}
                   >
+                    <div
+                      style={s.mealDragHandle}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        onMealPointerDown(e, meal);
+                      }}
+                      onPointerMove={onMealPointerMove}
+                      onPointerUp={onMealPointerUp}
+                      onPointerCancel={onMealPointerCancel}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DragHandleIcon />
+                    </div>
                     <div style={s.mealCardLeft}>
                       <p style={s.mealCardName}>{meal.name}</p>
                       <p style={s.mealCardRecipes}>

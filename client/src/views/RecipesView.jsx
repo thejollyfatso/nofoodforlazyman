@@ -1055,7 +1055,7 @@ export default function RecipesView({
       return (
         <div style={s.actionBar}>
           <button style={s.addBtn} onClick={() => setShowAddPicker(true)}>
-            +
+            New
           </button>
         </div>
       );

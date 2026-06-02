@@ -676,9 +676,15 @@ function App() {
           navContext={navContext}
         />
       )}
-      <button style={cogBtnStyle} onClick={openSettings} aria-label="Settings">
-        <IconCog />
-      </button>
+      {view === "home" && (
+        <button
+          style={cogBtnStyle}
+          onClick={openSettings}
+          aria-label="Settings"
+        >
+          <IconCog />
+        </button>
+      )}
       <NavBar
         view={view}
         navContext={navContext}
