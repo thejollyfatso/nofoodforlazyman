@@ -4,6 +4,14 @@ import { formatQty } from "../utils/formatQty";
 import { removeRecipeFromList, subtractQty } from "../state/useShoppingList";
 import Avatar from "../components/Avatar";
 
+function darkenHex(hex, amount = 0.35) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = Math.max(0, Math.round(((n >> 16) & 0xff) * (1 - amount)));
+  const g = Math.max(0, Math.round(((n >> 8) & 0xff) * (1 - amount)));
+  const b = Math.max(0, Math.round((n & 0xff) * (1 - amount)));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+}
+
 // ── Drag handle icon ──────────────────────────────────────────────────────────
 
 function DragHandleIcon() {
@@ -134,7 +142,9 @@ const s = {
   }),
   mealCard: (color, dragging) => ({
     background: color || "#fff",
-    border: "1.5px solid var(--color-border)",
+    border: color
+      ? `1.5px solid ${darkenHex(color)}`
+      : "1.5px solid var(--color-border)",
     borderRadius: "var(--radius-sm)",
     padding: "8px 12px 8px 0",
     marginBottom: "6px",
